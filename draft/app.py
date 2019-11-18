@@ -6,13 +6,19 @@ from werkzeug import secure_filename
 import sys,os,random
 # <<<<<<< HEAD
 import lookup
+import bleach
+import bcrypt
 
+UPLOAD_FOLDER = '/uploaded/'
+ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
+
+# CONN = lookup.getConn('spulavar_db')
 # CONN = lookup.getConn('sbussey_db')
 CONN = lookup.getConn('ccannatt_db')
 # =======
-import bcrypt
 
 app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 app.secret_key = 'your secret here'
 # replace that with a random key
@@ -140,16 +146,16 @@ def profile():#username):
         return redirect( url_for('index') )
 
 @app.route('/add/', methods=["GET", "POST"])
-def add():
+def add(): #only if user
     return render_template('main.html',title='Hello')
 
-@app.route('/update/<sid>/<cid>/')
-def update(sid, cid):
+@app.route('/update/<sid>/<cid>/', methods=["GET","POST"])
+def update(sid, cid): #only if user
     return render_template('main.html',title='Hello')
 
 @app.route('/read/<sid>', defaults={'cid': 1})
 @app.route('/read/<sid>/<cid>/')
-def read(sid, cid):
+def read(sid, cid): #if writer, create a button to update.
     return render_template('main.html', title="Hello")
 
 @app.route('/bookmarks/')
