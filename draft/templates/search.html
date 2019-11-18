@@ -8,24 +8,33 @@
 </div> -->
 
 <div id="results">
-
-        <h1>List of Works: </h1>
-        <table id="movies-list">
+        <h1>List of {{kind}} </h1>
+        <table id="res-list">
             <tr>
+	      {% if kind=="work" %}
                 <th>Title</th>
                 <th>Author</th>
                 <th>Chapter Count </th>
                 <th>Date Updated </th>
-
+	      {% else %}
+		<th>Author Username</th>
+	      {% endif %}
             </tr>
-            {%for work in works%}
-            <tr work-sid="{{work['sid']}}">
-                <td class="title">{{work['title']}}</td>
-                <td class="author">{{work['username']}}</td>
-                <td class="chapter-cnt">{{work['count(sid)']}}</td>
-                <td class="updated">{{work['updated']}}</td>
+            {%for result in res %}
+	    {% if kind=="work" %}
+            <tr work-sid="{{result['sid']}}">
+                <td class="title">{{result['title']}}</td>
+                <td class="author">{{result['username']}}</td>
+                <td class="chapter-cnt">{{result['count(sid)']}}</td>
+                <td class="updated">{{result['updated']}}</td>
             </tr>
+	    {% else %}
+	    <tr uid="{{result['uid']}}">
+	      <td class="uname">{{result['username']}}</td>
+	    </tr>
+	    {% endif %}
             {%endfor%}
+	    
 
         </table>
 
