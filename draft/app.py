@@ -7,8 +7,8 @@ import sys,os,random
 # <<<<<<< HEAD
 import lookup
 
-# CONN = lookup.getConn('sbussey_db')
-CONN = lookup.getConn('ccannatt_db')
+CONN = lookup.getConn('sbussey_db')
+# CONN = lookup.getConn('ccannatt_db')
 # =======
 import bcrypt
 
@@ -32,10 +32,12 @@ def getConn():
         DSN = dbi.read_cnf()
     return dbi.connect(DSN)
 
-@app.route('/')
+@app.route('/', methods=["GET", "POST"])
 def index():
     if request.method == "POST":
-        return redirect(url_for('worksByTerm', search_term=request.form.get('search_term')))    
+        term = request.form.get('search_term')
+        kind = request.form.get('search_kind')
+        return redirect(url_for('worksByTerm', search_kind=kind, search_term=term))    
     else:
         if 'username' in session:
             return redirect( url_for('recommendations'))
@@ -196,21 +198,22 @@ def greet():
             flash('form submission error'+str(err))
             return redirect( url_for('index') )
 
-@app.route('/works/', defaults={'search_term': None})
-@app.route('/works/<search_term>', methods=["GET"])
-def worksByTerm(search_term):
-     title = search_term
+@app.route('/search/<search_kind>', defaults={'search_term': ""})
+@app.route('/search/<search_kind>/<search_term>', methods=["GET"])
+def worksByTerm(search_kind, search_term):
+     term = search_term
+     kind = search_kind
     
      #search for works like the search term
      #if no search term, defaults to all movies 
-     works = lookup.searchWorks(CONN, title) if search_term else {}
-     if works:
-         print ("got works")
-     #if no movies found matching search term, notify
-     if not works:
-         flash("No movies found including: {} :( ".format(search_term))
+     
+     res = lookup.searchWorks(CONN, term) if (kind=="work") else lookup.searchAuthors(CONN, term)
+     
+    
+     if not res:
+         flash("No {} found including: {} :( ".format(kind, term))
 
-     return render_template('search.html', works=works)
+     return render_template('search.html', kind=kind, res=res)
 
 
 # @app.route('/formecho/', methods=['GET','POST'])

@@ -14,14 +14,15 @@ def getConn(db):
 def searchWorks(conn, searchterm):
     '''finds works with title including searchterm'''
     curs = dbi.dictCursor(conn)
-    curs.execute(''' select sid, username, title, genre,                                                                                     
-                 audience, warnings, isFin, updated, summary,
-                 stars, count(sid) from (select sid, uid, title, 
-                 genre, audience, warnings, isFin, updated,
-                 summary, stars, count(sid) from 
-                 (select * from works where title like %s)
-                 as q1 left outer join chapters using(sid) 
-                 group by sid) as q2 left outer join (select uid, username from users) as q3 using(uid)''', 
+    curs.execute(''' select * from (select sid, uid, title, 
+                 genre, audience, warnings, isFin, updated,                                                                                                            summary, stars, count(sid) from                                                                                                                       (select * from works where title like %s)                                                                                                             as q1 left outer join chapters using(sid)                                                                                                             group by sid) as q2 left outer join 
+                 (select uid, username from users) as q3 using(uid)''', 
                  ['%' + searchterm + '%'])
     return curs.fetchall()
-
+def searchAuthors(conn, author):
+    '''finds authorsmathing name'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select uid, username from users where 
+                 username like %s''', 
+                 ['%' + author + '%'])
+    return curs.fetchall()

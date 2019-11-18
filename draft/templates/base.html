@@ -34,10 +34,20 @@
               </li>
               <li class="nav-item">
                 <form method="POST" action="{{url_for('index')}}">
-                  <label for="search_term">Search Works: </label>
+		  <fieldset>
+                    <label>
+                        <input required type="radio" name="search_kind" value="work">
+                        By Title
+                    </label>
+                    <label>
+                        <input required type="radio" name="search_kind" value="author">
+                        By Author
+                    </label>
+                    </fieldset>
+		  <label for="search_term">Search Works: </label>
                   <input name="search_term" value="">
-                  <input type="submit" name="submit-btn" value="Search">
-                </form>
+		  <input type="submit" name="submit-btn" value="Search">
+		</form>
                 <!-- <a class="nav-link" href="https://www.clairecannatti.com/programming">programming</a> -->
               </li>
               <li class="nav-item dropdown">
