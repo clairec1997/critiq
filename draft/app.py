@@ -4,11 +4,12 @@ from flask import (Flask, render_template, make_response, url_for, request,
 import dbi
 from werkzeug import secure_filename
 import sys,os,random
-<<<<<<< HEAD
+# <<<<<<< HEAD
 import lookup
 
-CONN = lookup.getConn('sbussey_db')
-=======
+# CONN = lookup.getConn('sbussey_db')
+CONN = lookup.getConn('ccannatt_db')
+# =======
 import bcrypt
 
 app = Flask(__name__)
@@ -37,6 +38,7 @@ def index():
         return redirect(url_for('worksByTerm', search_term=request.form.get('search_term')))    
     else:
         return render_template('main.html',title='Hello')
+        
 @app.route('/join/', methods=["POST"])
 def join():
     try:
@@ -122,11 +124,10 @@ def profile():#username):
             username = session['username']
             uid = session['uid']
             session['visits'] = 1+int(session['visits'])
-            return render_template('greet.html',
-                                   page_title='My App: Welcome {}'.format(username),
-                                   name=username,
-                                   uid=uid,
-                                   visits=session['visits'])
+            return render_template('profile.html',
+                                   page_title="{}'s Profile".format(username),
+                                   username=username
+                                   )
 
         else:
             flash('you are not logged in. Please login or join')

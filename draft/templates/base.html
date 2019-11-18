@@ -27,17 +27,17 @@
             <span class="navbar-toggler-icon"></span>
           </button>
     
-          <div class="collapse navbar-collapse" id="navbarSupportedContent" style="background-color: "> 
+          <div class="collapse navbar-collapse" id="navbarSupportedContent"> 
             <ul class="navbar-nav mr-auto">
               <li class="nav-item active">
-                <a class="nav-link" href="{{url_for('greet')}}">critiq<span class="sr-only">(current)</span></a>
+                <a class="nav-link" href="{{url_for('index')}}">critiq<span class="sr-only">(current)</span></a>
               </li>
               <li class="nav-item">
                 <form method="POST" action="{{url_for('index')}}">
-		  <label for="search_term">Search Works: </label>
-		  <input name="search_term" value="">
-		  <input type="submit" name="submit-btn" value="Search">
-		</form>
+                  <label for="search_term">Search Works: </label>
+                  <input name="search_term" value="">
+                  <input type="submit" name="submit-btn" value="Search">
+                </form>
                 <!-- <a class="nav-link" href="https://www.clairecannatti.com/programming">programming</a> -->
               </li>
               <li class="nav-item dropdown">
@@ -55,8 +55,7 @@
           </div>
     
         </nav>
->>>>>>> 16cc9ff9edeb0d92834985b7e8eff2a1863156ba
-
+<!-- >>>>>>> 16cc9ff9edeb0d92834985b7e8eff2a1863156ba -->
 {% with messages = get_flashed_messages() %}
     {% if messages %}
         <div id="messages">
@@ -66,10 +65,17 @@
         </div>
     {% endif %}
 {% endwith %}
-            
-{% block content %}
-<h1>Welcome!</h1>
-{% endblock %}
+        
+<div class="row">
+  <div class="col-xl-2 col-lg-2 col-md-1 col-sm-0 col-xs-0"></div>
 
+  <div class="col-xl-8 col-lg-8 col-md-10 col-sm-12 col-xs-12">
+    {% block content %}
+    <h1>Welcome!</h1>
+    {% endblock %}
+  </div>
+
+  <div class="col-xl-2 col-lg-2 col-md-1 col-sm-0 col-xs-0"></div>
+</div>
 </body>
 </html>
