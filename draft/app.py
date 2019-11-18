@@ -139,13 +139,18 @@ def profile():#username):
         flash('some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/add/')
+@app.route('/add/', methods=["GET", "POST"])
 def add():
     return render_template('main.html',title='Hello')
 
-@app.route('/update/')
-def update():
+@app.route('/update/<sid>/<cid>/')
+def update(sid, cid):
     return render_template('main.html',title='Hello')
+
+@app.route('/read/<sid>', defaults={'cid': 1})
+@app.route('/read/<sid>/<cid>/')
+def read(sid, cid):
+    return render_template('main.html', title="Hello")
 
 @app.route('/bookmarks/')
 def bookmarks():
