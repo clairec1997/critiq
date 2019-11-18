@@ -53,7 +53,9 @@ ENGINE = InnoDB;
 create table chapters (
     cid int not null auto_increment,
     cnum int,
-    sid int not NULL,    
+    sid int not NULL,
+    filename varchar(50)
+
     PRIMARY KEY (cid),
     index(sid),
     foreign key (sid) references works(sid)
