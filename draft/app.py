@@ -30,14 +30,6 @@ app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
 # This gets us better error messages for certain common request errors
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 
-DSN = None
-
-def getConn():
-    global DSN
-    if DSN is None:
-        DSN = dbi.read_cnf()
-    return dbi.connect(DSN)
-
 @app.route('/', methods=["GET", "POST"])
 def index():
     if request.method == "POST":
