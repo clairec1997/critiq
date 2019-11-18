@@ -1,0 +1,51 @@
+{%extends "base.html" %}
+
+{% block content %}
+<!-- <div id="featured-movie">
+    <h3>Featured Movie: #<span id='tt'></span></h3>
+    <h4>Title: <span id='title'></span> Directed By: <span id='director'></span> 
+        Release: <span id='release'></span></h4>
+</div> -->
+
+<div id="results">
+
+        <h1>List of Works: </h1>
+        <table id="movies-list">
+            <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Chapter Count </th>
+                <th>Date Updated </th>
+
+            </tr>
+            {%for work in works%}
+            <tr work-sid="{{work['sid']}}">
+                <td class="title">{{work['title']}}</td>
+                <td class="author">{{work['username']}}</td>
+                <td class="chapter-cnt">{{work['count(sid)']}}</td>
+                <td class="updated">{{work['updated']}}</td>
+            </tr>
+            {%endfor%}
+
+        </table>
+
+</div>
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script>
+// $('tr').on('click', '.feature-button', function (event) { 
+//     tt = $(this).closest('tr').data()
+//     row = $(this).closest('tr').find('td')
+//     title = $(row[0]).text()
+//     director = $(row[1]).text()
+//     release = $(row[2]).text()
+//     console.log(title, director, release)
+//     $("span").eq(0).text(tt['tt'])
+//     $("span").eq(1).text(title)
+//     $("span").eq(2).text(director)
+//     $("span").eq(3).text(release)
+//     $('#featured-movie').show()
+})
+</script>
+
+{%endblock%}

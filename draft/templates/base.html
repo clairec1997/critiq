@@ -9,6 +9,17 @@
 </head>
 <body>
 
+{%block search%}
+    <div id="search">
+        <form method="POST" action="{{url_for('index')}}">
+            <label for="search_term">Search Works: </label>
+            <input name="search_term" value="">
+            <input type="submit" name="submit-btn" value="Search">
+        </form>
+    </div>
+{% endblock %}
+
+
 {% with messages = get_flashed_messages() %}
     {% if messages %}
         <div id="messages">
@@ -19,7 +30,7 @@
     {% endif %}
 {% endwith %}
             
-{% block main_content %}
+{% block content %}
 <h1>Welcome!</h1>
 {% endblock %}
 

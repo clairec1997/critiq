@@ -1,63 +1,64 @@
+drop table if exists chapters;
 drop table if exists works;
 drop table if exists users;
-drop table if exists chapters;
+drop table if exists comments;
+drop table if exists reviews;
 
 
-create table users {
-    int uid not null auto_increment primary key,
-    varchar(30) username, 
-    BINARY(64) passhash,
-    float commentscore
-}
+create table users (
+    uid int not null auto_increment primary key,
+    username varchar(30), 
+    passhash BINARY(64),
+    commentscore float
+)
 
 ENGINE = InnoDB;
 
-create table works {
-    int sid not null auto_increment,
-    int uid not NULL primary key,
-    set genre ('Romance','Fantasy','Horror','Sci-Fi','Historical','Mystery','Humor','Literary', 
+create table works (
+    sid int not null auto_increment,
+    uid int not NULL,
+    title VARCHAR(200),
+    genre set ('Romance','Fantasy','Horror','Sci-Fi','Historical','Mystery','Humor','Literary', 
             'Thriller','Suspense','Poetry'),
-    set audience('General','Young Adult','18+'),
-    set warnings('Violence','Gore','Rape/Sexual Assault','Sexual Content','Racism','Homophobia',
+    audience set ('General','Young Adult','18+'),
+    warnings set ('Violence','Gore','Rape/Sexual Assault','Sexual Content','Racism','Homophobia',
             'Suicidal Content','Abuse', 'Animal Cruelty', 'Self-Harm', 'Eating Disorder',
             'Incest','Child Abuse/Pedophilia', 'Death/Dying','Pregnancy/Childbirth',
             'Miscarriages/Abortion','Mental Illness'),
-    enum isFin('Finished','Work in Progress'),
-    date updated,
-    varchar(2000) summary,
-    float stars,
-
-    index(uid)
+    isFin enum ('Finished','Work in Progress'),
+    updated date,
+    summary varchar(2000),
+    stars float,
+    PRIMARY KEY (sid),
+    index(uid),
     foreign key (uid) references users(uid)
         on UPDATE CASCADE
         on delete cascade
-}
+)
 
 ENGINE = InnoDB;
 
-create table chapters {
-    int cid not null auto_increment,
-    int cnum,
-    int sid not NULL,    
-
-    index(sid)
+create table chapters (
+    cid int not null auto_increment,
+    cnum int,
+    sid int not NULL,    
+    PRIMARY KEY (cid),
+    index(sid),
     foreign key (sid) references works(sid)
         on update cascade
         on delete cascade
-
-    Primary key (cid)
-}
+)
 
 Engine = InnoDB;
 
-create table comments {
-    int cid not null,
-    int commenter not null,
-    int ishelpful,
-    varchar(2000),
-}
 
-create table reviews {
-    int sid not null,
+-- create table comments (
+--     cid int not null,
+--     commenter int not null,
+--     ishelpful int,
+--     txt varchar(2000)
+-- )
 
-}
+-- create table reviews (
+--     sid int not null
+-- )
