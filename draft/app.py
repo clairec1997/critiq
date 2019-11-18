@@ -37,7 +37,10 @@ def index():
     if request.method == "POST":
         return redirect(url_for('worksByTerm', search_term=request.form.get('search_term')))    
     else:
-        return render_template('main.html',title='Hello')
+        if 'username' in session:
+            return redirect( url_for('recommendations'))
+        else:
+            return render_template('main.html',title='Hello')
         
 @app.route('/join/', methods=["POST"])
 def join():
@@ -122,8 +125,8 @@ def profile():#username):
         # don't trust the URL; it's only there for decoration
         if 'username' in session:
             username = session['username']
-            uid = session['uid']
-            session['visits'] = 1+int(session['visits'])
+            # uid = session['uid']
+            # session['visits'] = 1+int(session['visits'])
             return render_template('profile.html',
                                    page_title="{}'s Profile".format(username),
                                    username=username
@@ -150,7 +153,15 @@ def bookmarks():
 
 @app.route('/recommendations/')
 def recommendations():
-    return render_template('main.html',title='Hello')
+    recommendations = [
+                        {'title': '', 
+                            'sid': 0,
+                            'summary': '',
+                            'tags': [],
+                            'rating': 0}
+                       ]    
+    return render_template('recommendations.html',
+                            recommendations=recommendations)
 
 @app.route('/logout/')
 def logout():

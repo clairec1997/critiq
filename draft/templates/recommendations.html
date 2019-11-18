@@ -6,7 +6,7 @@
 
 {% for rec in recommendations %}
 <div class="rec">
-    <h4><a href="{{url_for('works', sid={{rec.sid}})}}">{{rec.title}}</a></h4>
+    <h4><a href="{{url_for('works')}}">{{rec.title}}</a></h4>
     <p>{{rec.author}}</p>
     <p>{{rec.rating}}/5.0</p>
     <p>Tags: 
