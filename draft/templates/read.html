@@ -1,0 +1,21 @@
+{% extends base.html %}
+
+<body>
+
+    <div id="quill" class="unselectable"></div>
+
+    <script>
+
+        var options = {
+            debug: true,
+            readOnly: true,
+            formats: ['bold', 'italic', 'underline', 'strike',
+                     'align', 'indent', 'list', 'clean'],
+            theme: 'bubble'
+        }
+
+        var read = new Quill('#quill', options);
+        read.root.innerHTML={{ contents }};
+    </script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+{% extends base.html %}
+
+<body>
+
+    <form action="" method="POST" onsubmit="Submit();">
+        <textarea id="content" name="write" style="display:none;"></textarea>
+        <div id="quill"></div>
+        <input type="submit" name="submit">
+    </form>
+
+    <script>
+
+        var toolbarOptions = ['bold', 'italic', 'underline', 'strike',
+                     'align', 'indent', 'list', 'clean']
+
+        var options = {
+            debug: true,
+            formats: toolbarOptions,
+            modules: {
+                toolbar: toolbarOptions,
+                history: {
+                    maxStack: 500,
+                    userOnly: true,
+                    delay: 1000,
+                },
+            },
+            placeholder: 'Write your story here...',
+            theme: 'snow'
+        }
+
+        var editor = new Quill('#quill', options)
+        
+        function Submit() {
+            $("#content").val(editor.root.innerHTML);
+            return true;
+        }
+        
+    </script>
+</body>
+</html>
