@@ -149,14 +149,34 @@ def profile():#username):
 def add(): #only if user
     return render_template('main.html',title='Hello')
 
-@app.route('/update/<sid>/<cid>/', methods=["GET","POST"])
-def update(sid, cid): #only if user
-    return render_template('main.html',title='Hello')
+@app.route('/update/uid/<sid>/<cid>/', methods=["GET","POST"])
+def update(sid, cid):
+    try:
+        if 'username' in session:
+            username=session['username'] #need to check if username corresponds to story writer
+            if request.method=="GET":
+                render_template('write.html', title='Update Story')
+            if request.method=="POST":
+                sometext = request.form['write']
+                bleach.clean(sometext,
+                    tags=['b','blockquote','i','p','li','ol','s'], 
+                    attributes=lambda t, n, v: return name=='class' and value[] =='q')
+                #need to store as a file
+                render_template('write.html')
+        else: 
+            flash('''You are not authorized to edit this work. 
+                    Please log in with this account''')
+            return redirect(url_for('index'))
+    except Exception as err:
+        flash('some kind of error '+str(err))
+        return redirect( url_for('index') )
+
 
 @app.route('/read/<sid>', defaults={'cid': 1})
 @app.route('/read/<sid>/<cid>/')
 def read(sid, cid): #if writer, create a button to update.
-    return render_template('main.html', title="Hello")
+    #get the file and pass it as a var in the template
+    return render_template('read.html', title="Hello")
 
 @app.route('/bookmarks/')
 def bookmarks():
