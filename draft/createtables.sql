@@ -36,6 +36,11 @@ create table works (
         on delete cascade
 )
 
+create table credit {
+    int uid not null;
+    int sid not null;
+}
+
 ENGINE = InnoDB;
 
 create table chapters (

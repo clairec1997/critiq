@@ -1,8 +1,25 @@
 {% extends "base.html" %}
 
 {% block main_content %}
-<h1>Hello!</h1>
+<h1>Welcome to My App</h1>
 
-<p>For a greeting by name, visit this <a href="{{ url_for('greet') }}">greeting</a> page.</p>
+<p>Please login or join, using one of the forms below:</p>
+
+<p>BTW, here's a string you might use: Göthe
+
+<form id="joinform" action="{{url_for('join')}}" method="post">
+    <h2>Join</h2>
+    <p><label><input type="text" name="username" required pattern="^\w+$"> Username</label></p>
+    <p><label><input type="password" name="password1" required> Password </label></p>
+    <p><label><input type="password" name="password2" required> Password again </label></p>
+    <p><button type="submit">Submit</button></p>
+</form>
+    
+<form id="loginform" action="{{url_for('login')}}" method="post">
+    <h2>Login</h2>
+    <p><label>Username: <input type="text" name="username" required pattern="^\w+$"></label></p>
+    <p><label>Password: <input type="password" name="password" required></label></p>
+    <p><button type="submit">Submit</button></p>
+</form>
 
 {% endblock %}

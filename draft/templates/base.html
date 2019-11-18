@@ -1,24 +1,61 @@
 <!doctype html>
 <html lang='en'>
 <head>
-    <meta charset='utf-8'>
-    <meta name=author content="">
-    <title>{{ page_title }}</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Claire Cannatti and Sophia Bussey and Svetha Pulavarty">
+    <meta name="description" content="A site for posting and critiquing creative writing.">
+
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel='stylesheet' href="{{url_for('static', filename = 'style.css')}}">
+    <link rel="icon" href="images/icon.jpg">
+    
+    <title>{{page_title}}}}</title>
     {% block head_stuff %} {% endblock %}
 </head>
 <body>
 
-{%block search%}
-    <div id="search">
-        <form method="POST" action="{{url_for('index')}}">
-            <label for="search_term">Search Works: </label>
-            <input name="search_term" value="">
-            <input type="submit" name="submit-btn" value="Search">
-        </form>
-    </div>
-{% endblock %}
-
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+    
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <a class="navbar-brand" href="#" > </a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+    
+          <div class="collapse navbar-collapse" id="navbarSupportedContent" style="background-color: "> 
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="{{url_for('greet')}}">critiq<span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <form method="POST" action="{{url_for('index')}}">
+		  <label for="search_term">Search Works: </label>
+		  <input name="search_term" value="">
+		  <input type="submit" name="submit-btn" value="Search">
+		</form>
+                <!-- <a class="nav-link" href="https://www.clairecannatti.com/programming">programming</a> -->
+              </li>
+              <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Profile</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                      <a class="dropdown-item" href="{{url_for('profile')}}">My Profile</a>
+                      <a class="dropdown-item" href="{{url_for('add')}}">Add a New Work</a>
+                      <a class="dropdown-item" href="{{url_for('update')}}">Update a Work</a>
+                      <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
+                      <a class="dropdown-item" href="{{url_for('greet')}}">My Recommendations</a>
+                      <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
+                    </div>
+                  </li>
+            </ul>
+          </div>
+    
+        </nav>
+>>>>>>> 16cc9ff9edeb0d92834985b7e8eff2a1863156ba
 
 {% with messages = get_flashed_messages() %}
     {% if messages %}
