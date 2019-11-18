@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
-{% block main_content %}
+{% block content %}
 
 <h1>Recommendations</h1>
 
 {% for rec in recommendations %}
 <div class="rec">
-    <h4><a href="{{url_for('works')}}">{{rec.title}}</a></h4>
-    <p>{{rec.author}}</p>
+    <h4><a href="/work/{{rec.sid}}">Title: {{rec.title}}</a></h4>
+    <p>Author: {{rec.author}}</p>
     <p>{{rec.rating}}/5.0</p>
     <p>Tags: 
         {%for tag in rec.tags %}

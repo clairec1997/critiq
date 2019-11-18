@@ -1,3 +1,4 @@
+drop table if exists credit;
 drop table if exists chapters;
 drop table if exists works;
 drop table if exists users;
@@ -36,10 +37,16 @@ create table works (
         on delete cascade
 )
 
-create table credit {
-    int uid not null;
-    int sid not null;
-}
+ENGINE = InnoDB;
+
+create table credit (
+    uid int not null,
+    sid int not null,
+    foreign key (uid) references users(uid)
+        on update cascade,
+    foreign key (sid) references works(sid)
+        on update cascade
+)
 
 ENGINE = InnoDB;
 

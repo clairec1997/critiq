@@ -12,7 +12,7 @@
     <link rel='stylesheet' href="{{url_for('static', filename = 'style.css')}}">
     <link rel="icon" href="images/icon.jpg">
     
-    <title>{{page_title}}}}</title>
+    <title>{{page_title}}</title>
     {% block head_stuff %} {% endblock %}
 </head>
 <body>
@@ -47,7 +47,7 @@
                       <a class="dropdown-item" href="{{url_for('add')}}">Add a New Work</a>
                       <a class="dropdown-item" href="{{url_for('update')}}">Update a Work</a>
                       <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
-                      <a class="dropdown-item" href="{{url_for('greet')}}">My Recommendations</a>
+                      <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>
                       <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
                     </div>
                   </li>
