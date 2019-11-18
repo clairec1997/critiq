@@ -12,7 +12,6 @@ CONN = lookup.getConn('sbussey_db')
 import bcrypt
 
 app = Flask(__name__)
->>>>>>> 16cc9ff9edeb0d92834985b7e8eff2a1863156ba
 
 app.secret_key = 'your secret here'
 # replace that with a random key
@@ -24,14 +23,6 @@ app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
 # This gets us better error messages for certain common request errors
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 
-<<<<<<< HEAD
-@app.route('/', methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        return redirect(url_for('worksByTerm', search_term=request.form.get('search_term')))
-    else:
-        return render_template('main.html',title='Hello')
-=======
 DSN = None
 
 def getConn():
@@ -42,7 +33,10 @@ def getConn():
 
 @app.route('/')
 def index():
-    return render_template('main.html',title='Hello')
+    if request.method == "POST":
+        return redirect(url_for('worksByTerm', search_term=request.form.get('search_term')))    
+    else:
+        return render_template('main.html',title='Hello')
 @app.route('/join/', methods=["POST"])
 def join():
     try:
@@ -173,7 +167,6 @@ def logout():
     except Exception as err:
         flash('some kind of error '+str(err))
         return redirect( url_for('index') )
->>>>>>> 16cc9ff9edeb0d92834985b7e8eff2a1863156ba
 
 @app.route('/greet/', methods=["GET", "POST"])
 def greet():
