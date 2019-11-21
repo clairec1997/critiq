@@ -71,7 +71,7 @@ def join():
         session['uid'] = uid
         session['logged_in'] = True
         session['visits'] = 1
-        return redirect( url_for('profile', username=username) )
+        return redirect( url_for('profile', uid=session['uid']) )
     except Exception as err:
         flash('form submission error '+str(err))
         return redirect( url_for('index') )
@@ -110,7 +110,7 @@ def login():
             session['uid'] = row['uid']
             session['logged_in'] = True
             session['visits'] = 1
-            return redirect( url_for('profile', username=username) )
+            return redirect( url_for('profile', uid=session['uid']) )
         else:
             flash('login incorrect. Try again or join')
             return redirect( url_for('index'))
@@ -119,8 +119,8 @@ def login():
         return redirect( url_for('index') )
 
 
-@app.route('/profile/')#<username>')
-def profile():#username):
+@app.route('/profile/<uid>')
+def profile(uid):
     try:
         # don't trust the URL; it's only there for decoration
         if 'username' in session:
@@ -139,27 +139,30 @@ def profile():#username):
         flash('some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/add/', methods=["GET", "POST"])
+@app.route('/manage/<uid>')
+def manage():
+    return render_template('manage.html, title=Hello')
+
+@app.route('/add/<uid>', methods=["GET", "POST"])
 def add(): #only if user
     return render_template('main.html',title='Hello')
 
-@app.route('/update/uid/<sid>/<cid>/', methods=["GET","POST"])
-def update(sid, cid):
+@app.route('/update/<uid>/<sid>/<cid>/', methods=["GET","POST"])
+def update(uid, sid, cid):
     try:
-        if 'username' in session:
-            username=session['username'] #need to check if username corresponds to story writer
+        if 'uid' in session and session['uid'] == uid:
             if request.method=="GET":
                 render_template('write.html', title='Update Story')
             if request.method=="POST":
                 sometext = request.form['write']
-                bleach.clean(sometext,
-                    tags=['b','blockquote','i','p','li','ol','s'], 
-                    attributes=lambda t, n, v: return name=='class' and value[] =='q')
+                #bleach.clean(sometext,
+                 #   tags=['b','blockquote','i','p','li','ol','s'], 
+                  #  attributes=[]])
                 #need to store as a file
                 render_template('write.html')
         else: 
             flash('''You are not authorized to edit this work. 
-                    Please log in with this account''')
+                    Please log in with the account associated with this work''')
             return redirect(url_for('index'))
     except Exception as err:
         flash('some kind of error '+str(err))
@@ -205,22 +208,6 @@ def logout():
         flash('some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/greet/', methods=["GET", "POST"])
-def greet():
-    if request.method == 'GET':
-        return render_template('greet.html', title='Customized Greeting')
-    else:
-        try:
-            username = request.form['username'] # throws error if there's trouble
-            flash('form submission successful')
-            return render_template('greet.html',
-                                   title='Welcome '+username,
-                                   name=username)
-
-        except Exception as err:
-            flash('form submission error'+str(err))
-            return redirect( url_for('index') )
-
 @app.route('/search/<search_kind>', defaults={'search_term': ""})
 @app.route('/search/<search_kind>/<search_term>', methods=["GET"])
 def worksByTerm(search_kind, search_term):
@@ -237,27 +224,6 @@ def worksByTerm(search_kind, search_term):
          flash("No {} found including: {} :( ".format(kind, term))
 
      return render_template('search.html', kind=kind, res=res)
-
-
-# @app.route('/formecho/', methods=['GET','POST'])
-# def formecho():
-#     if request.method == 'GET':
-#         return render_template('form_data.html',
-#                                method=request.method,
-#                                form_data=request.args)
-#     elif request.method == 'POST':
-#         return render_template('form_data.html',
-#                                method=request.method,
-#                                form_data=request.form)
-#     else:
-#         return render_template('form_data.html',
-#                                method=request.method,
-#                                form_data={})
-
-# @app.route('/testform/')
-# def testform():
-#     return render_template('testform.html')
-
 
 if __name__ == '__main__':
 

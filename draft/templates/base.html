@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="author" content="Claire Cannatti and Sophia Bussey and Svetha Pulavarty">
     <meta name="description" content="A site for posting and critiquing creative writing.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';" />
 
     <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel='stylesheet' href="{{url_for('static', filename = 'style.css')}}">
     <link rel="icon" href="images/icon.jpg">
-
     <title>{{page_title}}</title>
     {% block head_stuff %} {% endblock %}
 </head>
@@ -54,12 +54,16 @@
               <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Profile</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                      {% if uid %}
                       <a class="dropdown-item" href="{{url_for('profile')}}">My Profile</a>
-                      <a class="dropdown-item" href="{{url_for('add')}}">Add a New Work</a>
-                      <a class="dropdown-item" href="{{url_for('update')}}">Update a Work</a>
+                      <a class="dropdown-item" href="{{url_for('manage')}}">Manage My Stories</a>
                       <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
                       <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>
                       <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
+                      {% else %}
+                      <a class="dropdown-item" href="{{url_for('login')}}">Log in</a>
+                      <a class="dropdown-item" href="{{url_for('join')}}">Sign up</a>
+                      {% endif %}
                     </div>
                   </li>
             </ul>
