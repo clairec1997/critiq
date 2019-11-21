@@ -49,7 +49,6 @@
                   <input name="search_term" value="">
 		  <input type="submit" name="submit-btn" value="Search">
 		</form>
-                <!-- <a class="nav-link" href="https://www.clairecannatti.com/programming">programming</a> -->
               </li>
               <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Profile</a>
@@ -60,9 +59,6 @@
                       <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
                       <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>
                       <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
-                      {% else %}
-                      <a class="dropdown-item" href="{{url_for('login')}}">Log in</a>
-                      <a class="dropdown-item" href="{{url_for('join')}}">Sign up</a>
                       {% endif %}
                     </div>
                   </li>

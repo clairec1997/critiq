@@ -119,7 +119,7 @@ def login():
         return redirect( url_for('index') )
 
 
-@app.route('/profile/<uid>')
+@app.route('/profile/') #allow everyone to access all profiles, but only if logged in can change data
 def profile(uid):
     try:
         # don't trust the URL; it's only there for decoration
@@ -139,7 +139,7 @@ def profile(uid):
         flash('some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/manage/<uid>')
+@app.route('/manage/')
 def manage():
     return render_template('manage.html, title=Hello')
 
@@ -156,7 +156,7 @@ def update(uid, sid, cid):
             if request.method=="POST":
                 sometext = request.form['write']
                 #bleach.clean(sometext,
-                 #   tags=['b','blockquote','i','p','li','ol','s'], 
+                 #   tags=['b','blockquote','i','em','strong','p','li','ol','s'], 
                   #  attributes=[]])
                 #need to store as a file
                 render_template('write.html')
