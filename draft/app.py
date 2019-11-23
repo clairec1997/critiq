@@ -189,9 +189,22 @@ def update(sid, cid):
 
 @app.route('/read/<int:sid>', defaults={'cnum': 1})
 @app.route('/read/<int:sid>/<int:cnum>/')
-def read(sid, cnum): #if writer, create a button to update.
+def read(sid, cnum): 
+    conn = lookup.getConn(CONN)
+    #if writer, create a button to update.
+    story = lookup.getStory(conn, sid)
+    author = lookup.getAuthor(conn, sid)
+    print(author)
+    if session['username'] == author['username']:
+        update = True
+    else:
+        update = False
     #get the file and pass it as a var in the template
-    return render_template('read.html', title="Hello")
+    return render_template('read.html', 
+                            title="Hello", 
+                            story=story, 
+                            author=author['username'],
+                            update=update)
 
 @app.route('/bookmarks/')
 def bookmarks():

@@ -1,7 +1,11 @@
-{% extends base.html %}
+{% extends 'base.html' %}
 
-<body>
+{% block content %}
 
+<h1>{{story.title}}</h1>
 
-</body>
-</html>
+<h5>{{author}}</h5>
+
+{{chaptertext}}
+
+{% endblock %}

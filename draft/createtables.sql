@@ -28,19 +28,8 @@ create table works (
     PRIMARY KEY (sid),
     index(uid),
     foreign key (uid) references users(uid)
-        on UPDATE CASCADE
+        on UPDATE cascade
         on delete cascade
-)
-
-ENGINE = InnoDB;
-
-create table credit (
-    uid int not null,
-    sid int not null,
-    foreign key (uid) references users(uid)
-        on update cascade,
-    foreign key (sid) references works(sid)
-        on update cascade
 )
 
 ENGINE = InnoDB;
@@ -82,12 +71,12 @@ create table taglink (
 
 Engine = InnoDB;
 
--- create table comments (
---     cid int not null,
---     commenter int not null,
---     ishelpful int,
---     txt varchar(2000)
--- )
+create table comments (
+    cid int not null auto_increment primary key,
+    commenter int not null,
+    ishelpful int,
+    txt varchar(2000)
+)
 
 -- create table reviews (
 --     sid int not null

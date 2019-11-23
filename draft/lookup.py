@@ -12,12 +12,14 @@ def getConn(db):
     return conn
 
 def insertPass(conn, username, hashed_str):
+    '''inserts user into database when they make an account'''
     curs = dbi.cursor(conn)
     curs.execute('''INSERT INTO users(uid,username,passhash)
                             VALUES(null,%s,%s)''',
                          [username, hashed_str])
 
 def getUIDFirst(conn):
+    '''gets last inserted uid'''
     curs = dbi.cursor(conn)
     curs.execute('select LAST_INSERT_ID()')
     row = curs.fetchone()
@@ -26,6 +28,7 @@ def getUIDFirst(conn):
     return uid
 
 def getLogin(conn, username):
+    '''gets hashed password to check for login'''
     curs = dbi.dictCursor(conn)
     curs.execute('''SELECT uid,passhash
                       FROM users
@@ -62,6 +65,23 @@ def getStories(conn, uid):
                 inner join works on (credit.sid = credit.uid) 
                 where uid = %s''', [uid])
     return curs.fetchall()
+
+def getStory(conn, sid):
+    '''returns chapter 1 of a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select works.summary as summary, 
+                    works.title as title, 
+                    chapters.filename as filename 
+                from works inner join chapters using (sid)
+                where sid=%s
+                ''', [sid])
+    return curs.fetchone()
+
+def getAuthor(conn, sid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select username from works inner join users using (uid)
+                    where sid=%s''', [sid])
+    return curs.fetchone()
 
 def getTags(conn, type):
     curs=dbi.dictCursor(conn)
