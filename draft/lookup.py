@@ -11,6 +11,27 @@ def getConn(db):
     conn.select_db(db)
     return conn
 
+def insertPass(conn, username, hashed_str):
+    curs = dbi.cursor(conn)
+    curs.execute('''INSERT INTO userpass(uid,username,hashed)
+                            VALUES(null,%s,%s)''',
+                         [username, hashed_str])
+
+def getUIDFirst(conn):
+    curs = dbi.cursor(conn)
+    curs.execute('select last_insert_id()')
+    row = curs.fetchone()
+    uid = row[0]
+    return uid
+
+def getLogin(conn, username):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''SELECT uid,hashed
+                      FROM userpass
+                      WHERE username = %s''',
+                     [username])
+    return curs.fetchone()
+
 def searchWorks(conn, searchterm):
     '''finds works with title including searchterm'''
     curs = dbi.dictCursor(conn)
@@ -35,4 +56,4 @@ def getStories(conn, uid):
                 inner join credit on (users.uid = credit.uid) 
                 inner join works on (credit.sid = credit.uid) 
                 where uid = %s''', [uid])
-    pass
+    return curs.fetchall()
