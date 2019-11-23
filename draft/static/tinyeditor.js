@@ -8,6 +8,4 @@ tinymce.init({
     width: 600, //px
     height: 300,
     element_format: 'html',
-    //skin: 'someskin',
-    //content_css: 'somefile.css'
 });

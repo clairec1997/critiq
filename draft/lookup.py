@@ -19,6 +19,7 @@ def searchWorks(conn, searchterm):
                  (select uid, username from users) as q3 using(uid)''', 
                  ['%' + searchterm + '%'])
     return curs.fetchall()
+
 def searchAuthors(conn, author):
     '''finds authorsmathing name'''
     curs = dbi.dictCursor(conn)
@@ -26,3 +27,12 @@ def searchAuthors(conn, author):
                  username like %s''', 
                  ['%' + author + '%'])
     return curs.fetchall()
+
+def getStories(conn, uid):
+    '''Returns all works associated with an account'''
+    curs=dbi.dictCursor(conn)
+    curs.execute('''select * from users 
+                inner join credit on (users.uid = credit.uid) 
+                inner join works on (credit.sid = credit.uid) 
+                where uid = %s''', [uid])
+    pass

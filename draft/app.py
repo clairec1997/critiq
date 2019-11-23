@@ -8,6 +8,7 @@ import sys,os,random
 import lookup
 import bleach
 import bcrypt
+from pathlib import Path
 
 UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
@@ -141,16 +142,24 @@ def profile(uid):
 
 @app.route('/manage/')
 def manage():
-    return render_template('manage.html, title=Hello')
-
-@app.route('/add/<uid>', methods=["GET", "POST"])
+    if uid in session:
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        stories = lookup.getStories(conn, uid)
+        return render_template('manage.html, title=Hello', stories=stories)
+    else: 
+        flash("Please log in or join")
+        redirect(url_for('index'))
+    
+@app.route('/add/', methods=["GET", "POST"])
 def add(): #only if user
     return render_template('main.html',title='Hello')
 
-@app.route('/update/<uid>/<sid>/<cid>/', methods=["GET","POST"])
-def update(uid, sid, cid):
+@app.route('/update/<int:sid>', defaults={'cnum':1})
+@app.route('/update/<int:sid>/<int:cnum>/', methods=["GET","POST"])
+def update(sid, cid):
     try:
-        if 'uid' in session and session['uid'] == uid:
+        if 'uid' in session:
             if request.method=="GET":
                 render_template('write.html', title='Update Story')
             if request.method=="POST":
@@ -169,9 +178,9 @@ def update(uid, sid, cid):
         return redirect( url_for('index') )
 
 
-@app.route('/read/<sid>', defaults={'cid': 1})
-@app.route('/read/<sid>/<cid>/')
-def read(sid, cid): #if writer, create a button to update.
+@app.route('/read/<int:sid>', defaults={'cnum': 1})
+@app.route('/read/<int:sid>/<int:cnum>/')
+def read(sid, cnum): #if writer, create a button to update.
     #get the file and pass it as a var in the template
     return render_template('read.html', title="Hello")
 

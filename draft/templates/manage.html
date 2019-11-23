@@ -1,0 +1,15 @@
+{% extends 'base.html %}
+
+{% block content %}
+
+{% if stories %}
+
+    {% for story in stories%}
+        
+    {% endfor %}
+
+{% endif %}
+
+<a href= "{{ url_for('add') }}"><p>Add a story!</p></a>
+
+{% endblock %}
