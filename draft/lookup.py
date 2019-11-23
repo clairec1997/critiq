@@ -13,21 +13,22 @@ def getConn(db):
 
 def insertPass(conn, username, hashed_str):
     curs = dbi.cursor(conn)
-    curs.execute('''INSERT INTO userpass(uid,username,hashed)
+    curs.execute('''INSERT INTO users(uid,username,passhash)
                             VALUES(null,%s,%s)''',
                          [username, hashed_str])
 
 def getUIDFirst(conn):
     curs = dbi.cursor(conn)
-    curs.execute('select last_insert_id()')
+    curs.execute('select LAST_INSERT_ID()')
     row = curs.fetchone()
+    print(row)
     uid = row[0]
     return uid
 
 def getLogin(conn, username):
     curs = dbi.dictCursor(conn)
-    curs.execute('''SELECT uid,hashed
-                      FROM userpass
+    curs.execute('''SELECT uid,passhash
+                      FROM users
                       WHERE username = %s''',
                      [username])
     return curs.fetchone()

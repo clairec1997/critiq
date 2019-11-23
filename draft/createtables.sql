@@ -10,7 +10,9 @@ drop table if exists users;
 create table users (
     uid int not null auto_increment primary key,
     username varchar(30), 
-    passhash BINARY(64),
+    passhash char(60),
+    unique(username),
+    index(username),
     commentscore DECIMAL
 )
 
