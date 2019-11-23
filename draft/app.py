@@ -146,7 +146,13 @@ def add():
     if request.method == "GET":
         if uid in session:
             uid = session['uid']
-            return render_template('main.html',title='Hello')
+            conn = lookup.getConn(CONN)
+            genre = lookup.getTags(conn, 'genre')
+            warnings = lookup.getTags(conn, 'warnings')
+            audience = lookup.getTags(conn, 'audience')
+            isFin = lookup.getTags(conn, 'isFin')
+            return render_template('add.html',title='Add Story', warnings=warnings, 
+                                genre=genre, audience=audience, isFin=isFin)
         else:
             flash("Please log in or join")
             redirect(url_for('index'))
