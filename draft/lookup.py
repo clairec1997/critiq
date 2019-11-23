@@ -35,8 +35,12 @@ def getLogin(conn, username):
 def searchWorks(conn, searchterm):
     '''finds works with title including searchterm'''
     curs = dbi.dictCursor(conn)
-    curs.execute(''' select * from (select sid, uid, title, 
-                 genre, audience, warnings, isFin, updated,                                                                                                            summary, stars, count(sid) from                                                                                                                       (select * from works where title like %s)                                                                                                             as q1 left outer join chapters using(sid)                                                                                                             group by sid) as q2 left outer join 
+    curs.execute(''' select * from 
+                        (select sid, uid, title, updated, 
+                        summary, stars, count(sid) from
+                                (select * from works where title like %s) 
+                        as q1 left outer join chapters using(sid) group by sid) 
+                        as q2 left outer join 
                  (select uid, username from users) as q3 using(uid)''', 
                  ['%' + searchterm + '%'])
     return curs.fetchall()
@@ -56,4 +60,9 @@ def getStories(conn, uid):
                 inner join credit on (users.uid = credit.uid) 
                 inner join works on (credit.sid = credit.uid) 
                 where uid = %s''', [uid])
+    return curs.fetchall()
+
+def getTags(conn, type):
+    curs=dbi.dictCursor(conn)
+    curs.execute('select * from tags where ttype=%s',[type])
     return curs.fetchall()
