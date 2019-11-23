@@ -66,3 +66,14 @@ def getTags(conn, type):
     curs=dbi.dictCursor(conn)
     curs.execute('select * from tags where ttype=%s',[type])
     return curs.fetchall()
+
+def addStory(conn, uid, title, summary):
+    curs = dbi.cursor(conn)
+    curs.execute('''insert into works(uid, title, summary)
+                    (%s, %s, %s)''', [uid, title, summary])
+    curs.execute('select last_insert_id()')
+    curs.fetchone()
+    return last_sid
+
+def addTags(conn, genre, warnings, audience, isFin):
+    pass
