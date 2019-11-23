@@ -77,43 +77,42 @@ def join():
 
 @app.route('/login/', methods=["POST"])
 def login():
-    # try:
-    username = request.form['username']
-    passwd = request.form['password']
-    conn = lookup.getConn(CONN)
-    row = lookup.getLogin(conn, username)
-    if row is None:
-        # Same response as wrong password,
-        # so no information about what went wrong
-        flash('login incorrect. Try again or join')
-        return redirect( url_for('index'))
-    hashed = row['passhash'] # already bytes? should be str
-    print(type(hashed))
-    print('hashed: {} {}'.format(hashed,type(hashed)))
-    print('passwd: {}'.format(passwd))
-    print('hashed.encode: {}'.format(hashed))#.encode('utf-8')))
-    # bc = bcrypt.hashpw(passwd.encode('utf-8'),hashed)#.encode('utf-8'))
-    
-    hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))#.encode('utf-8'))
-    hashed2_str = hashed2.decode('utf-8')
-    print('bcrypt: {}'.format(hashed2))
-    print('str(bcrypt): {}'.format(str(hashed)))
-    print('bc.decode: {}'.format(hashed2.decode('utf-8')))
-    print('equal? {}'.format(hashed==hashed2.decode('utf-8')))
-    if hashed2_str == hashed:
-        flash('successfully logged in as '+username)
-        session['username'] = username
-        session['uid'] = row['uid']
-        print(session['uid'])
-        session['logged_in'] = True
-        session['visits'] = 1
-        return redirect( url_for('profile', uid=session['uid']) )
-    else:
-        flash('login incorrect. Try again or join')
-        return redirect( url_for('index'))
-    # except Exception as err:
-    #     flash('form submission error: '+str(err))
-    #     return redirect( url_for('index') )
+    try:
+        username = request.form['username']
+        passwd = request.form['password']
+        conn = lookup.getConn(CONN)
+        row = lookup.getLogin(conn, username)
+        if row is None:
+            # Same response as wrong password,
+            # so no information about what went wrong
+            flash('login incorrect. Try again or join')
+            return redirect( url_for('index'))
+        hashed = row['passhash'] 
+        print(type(hashed))
+        print('hashed: {} {}'.format(hashed,type(hashed)))
+        print('passwd: {}'.format(passwd))
+        print('hashed.encode: {}'.format(hashed.encode('utf-8')))
+        
+        hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))#.encode('utf-8'))
+        hashed2_str = hashed2.decode('utf-8')
+        print('bcrypt: {}'.format(hashed2))
+        print('str(bcrypt): {}'.format(str(hashed)))
+        print('bc.decode: {}'.format(hashed2.decode('utf-8')))
+        print('equal? {}'.format(hashed==hashed2.decode('utf-8')))
+        if hashed2_str == hashed:
+            flash('successfully logged in as '+username)
+            session['username'] = username
+            session['uid'] = row['uid']
+            print(session['uid'])
+            session['logged_in'] = True
+            session['visits'] = 1
+            return redirect( url_for('profile', uid=session['uid']) )
+        else:
+            flash('login incorrect. Try again or join')
+            return redirect( url_for('index'))
+    except Exception as err:
+        flash('form submission error: '+str(err))
+        return redirect( url_for('index') )
 
 
 @app.route('/profile/<uid>') #allow everyone to access all profiles, but only if logged in can change data
