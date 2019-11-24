@@ -93,8 +93,11 @@ def addStory(conn, uid, title, summary):
     curs.execute('''insert into works(uid, title, summary)
                     (%s, %s, %s)''', [uid, title, summary])
     curs.execute('select last_insert_id()')
-    curs.fetchone()
-    return last_sid
+    return curs.fetchone()
 
-def addTags(conn, genre, warnings, audience, isFin):
-    pass
+def addTags(conn, sid, genre, warnings, audience, isFin):
+    curs = dbi.cursor(conn)
+    tagslist = [*genre, *warnings, *audience, *isFin]
+    for i in tagslist:
+        curs.execute('''insert into taglink(tid, sid)
+        (%s, %s)''', [i, sid])

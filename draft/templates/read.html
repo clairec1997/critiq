@@ -6,7 +6,9 @@
 
 <h5>{{author}}</h5>
 
-{{chaptertext}}
+<div class="unselectable">
+    {% include url_for('uploaded', filename=story.filename) %}
+</div>
 
 <div id="commentForm">
     <form>

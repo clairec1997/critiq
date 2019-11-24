@@ -161,7 +161,19 @@ def add():
             flash("Please log in or join")
             redirect(url_for('index'))
     if request.method == "POST":
-        pass
+        uid = session['uid']
+        title = request.form['title']
+        summary = request.form['summary']
+        genre = request.form.getlist('genre')
+        audience = request.form['audience']
+        warnings = request.form.getlist('warnings')
+        status = request.form['isFin']
+        
+        conn = lookup.getConn(CONN)
+        sid = lookup.addStory(conn, uid, title, summary)
+        lookup.addTags(conn, sid, genre, warnings, audience, status)
+
+        return redirect(url_for('update', sid=sid))
 
 @app.route('/update/<int:sid>', defaults={'cnum':1})
 @app.route('/update/<int:sid>/<int:cnum>/', methods=["GET","POST"])
@@ -189,20 +201,19 @@ def update(sid, cid):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    #if writer, create a button to update.
     story = lookup.getStory(conn, sid)
     author = lookup.getAuthor(conn, sid)
     print(author)
     if session['username'] == author['username']:
-        update = True
-    else:
-        update = False
-    #get the file and pass it as a var in the template
-    return render_template('read.html', 
+        return render_template('read.html', 
                             title="Hello", 
-                            story=story, 
+                            story=story,
                             author=author['username'],
                             update=update)
+    else:
+        flash('''You are not logged in as the user for this work.
+        Please log in and try again.''')
+        return redirect(url_for('index'))
 
 @app.route('/bookmarks/')
 def bookmarks():
