@@ -14,7 +14,7 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 #CONN = 'sbussey_db'
-#CONN = 'ccannatt_db'
+CONN = 'ccannatt_db'
 #CONN = 'spulavar_db'
 
 app = Flask(__name__)
@@ -53,20 +53,23 @@ def join():
             return redirect( url_for('index'))
         hashed = bcrypt.hashpw(passwd1.encode('utf-8'), bcrypt.gensalt())
         hashed_str = hashed.decode('utf-8')
+        print(type(hashed_str))
         print(passwd1, type(passwd1), hashed, hashed_str)
+
         conn = lookup.getConn(CONN)
         try:
             lookup.insertPass(conn, username, hashed_str)
-        except Exception as err:
-            flash('That username is taken: {}'.format(repr(err)))
+        except Exception as err: # this is not getting thrown
+            flash('That username is taken.')#: {}'.format(repr(err)))
             return redirect(url_for('index'))
         uid = lookup.getUIDFirst(conn)
-        #flash('FYI, you were issued UID {}'.format(uid))
+        # print(uid)
+        flash('FYI, you were issued UID {}'.format(uid))
         session['username'] = username
         session['uid'] = uid
         session['logged_in'] = True
-        session['visits'] = 1
-        return redirect( url_for('profile', uid=session['uid']) )
+        # session['visits'] = 1
+        return redirect( url_for('profile', uid=uid) ) #should put username in instead? more readable
     except Exception as err:
         flash('form submission error '+str(err))
         return redirect( url_for('index') )
@@ -77,27 +80,29 @@ def login():
         username = request.form['username']
         passwd = request.form['password']
         conn = lookup.getConn(CONN)
-        row = lookup.getLogin(conn)
+        row = lookup.getLogin(conn, username)
         if row is None:
             # Same response as wrong password,
             # so no information about what went wrong
             flash('login incorrect. Try again or join')
             return redirect( url_for('index'))
-        hashed = row['hashed']
+        hashed = row['passhash'] 
+        print(type(hashed))
         print('hashed: {} {}'.format(hashed,type(hashed)))
         print('passwd: {}'.format(passwd))
         print('hashed.encode: {}'.format(hashed.encode('utf-8')))
-        bc = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))
-        print('bcrypt: {}'.format(bc))
-        print('str(bcrypt): {}'.format(str(bc)))
-        print('bc.decode: {}'.format(bc.decode('utf-8')))
-        print('equal? {}'.format(hashed==bc.decode('utf-8')))
-        hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))
+        
+        hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))#.encode('utf-8'))
         hashed2_str = hashed2.decode('utf-8')
+        print('bcrypt: {}'.format(hashed2))
+        print('str(bcrypt): {}'.format(str(hashed)))
+        print('bc.decode: {}'.format(hashed2.decode('utf-8')))
+        print('equal? {}'.format(hashed==hashed2.decode('utf-8')))
         if hashed2_str == hashed:
             flash('successfully logged in as '+username)
             session['username'] = username
             session['uid'] = row['uid']
+            print(session['uid'])
             session['logged_in'] = True
             session['visits'] = 1
             return redirect( url_for('profile', uid=session['uid']) )
@@ -105,10 +110,15 @@ def login():
             flash('login incorrect. Try again or join')
             return redirect( url_for('index'))
     except Exception as err:
-        flash('form submission error '+str(err))
+        flash('form submission error: '+str(err))
         return redirect( url_for('index') )
 
+<<<<<<< HEAD
 @app.route('/profile/') #allow everyone to access all profiles, but only if logged in can change data
+=======
+
+@app.route('/profile/<uid>') #allow everyone to access all profiles, but only if logged in can change data
+>>>>>>> 6f2b83bf67150f9fd8254149b846e921ee871781
 def profile(uid):
     try:
         # don't trust the URL; it's only there for decoration
@@ -181,9 +191,22 @@ def update(sid, cid):
 
 @app.route('/read/<int:sid>', defaults={'cnum': 1})
 @app.route('/read/<int:sid>/<int:cnum>/')
-def read(sid, cnum): #if writer, create a button to update.
+def read(sid, cnum): 
+    conn = lookup.getConn(CONN)
+    #if writer, create a button to update.
+    story = lookup.getStory(conn, sid)
+    author = lookup.getAuthor(conn, sid)
+    print(author)
+    if session['username'] == author['username']:
+        update = True
+    else:
+        update = False
     #get the file and pass it as a var in the template
-    return render_template('read.html', title="Hello")
+    return render_template('read.html', 
+                            title="Hello", 
+                            story=story, 
+                            author=author['username'],
+                            update=update)
 
 @app.route('/bookmarks/')
 def bookmarks():
@@ -191,7 +214,7 @@ def bookmarks():
 
 @app.route('/recommendations/')
 def recommendations():
-    recommendations = [
+    recommendation = [
                         {'title': '', 
                             'sid': 0,
                             'summary': '',
@@ -199,7 +222,7 @@ def recommendations():
                             'rating': 0}
                        ]    
     return render_template('recommendations.html',
-                            recommendations=recommendations)
+                            recommendations=recommendation)
 
 @app.route('/logout/')
 def logout():

@@ -1,7 +1,18 @@
-{% extends base.html %}
+{% extends 'base.html' %}
 
-<body>
+{% block content %}
 
+<h1>{{story.title}}</h1>
 
-</body>
-</html>
+<h5>{{author}}</h5>
+
+{{chaptertext}}
+
+<div id="commentForm">
+    <form>
+        <label>Comment:</label>
+            <textarea name="commentText" rows="8" class="form-control"></textarea>
+    </form>
+</div>
+
+{% endblock %}
