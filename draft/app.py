@@ -4,7 +4,7 @@ from flask import (Flask, render_template, make_response, url_for, request,
 import dbi
 from werkzeug import secure_filename
 import sys,os,random
-# <<<<<<< HEAD
+
 import lookup
 import bleach
 import bcrypt
@@ -14,7 +14,7 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 #CONN = 'sbussey_db'
-CONN = 'ccannatt_db'
+#CONN = 'ccannatt_db'
 #CONN = 'spulavar_db'
 
 app = Flask(__name__)
@@ -113,12 +113,8 @@ def login():
         flash('form submission error: '+str(err))
         return redirect( url_for('index') )
 
-<<<<<<< HEAD
-@app.route('/profile/') #allow everyone to access all profiles, but only if logged in can change data
-=======
 
 @app.route('/profile/<uid>') #allow everyone to access all profiles, but only if logged in can change data
->>>>>>> 6f2b83bf67150f9fd8254149b846e921ee871781
 def profile(uid):
     try:
         # don't trust the URL; it's only there for decoration
