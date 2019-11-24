@@ -9,7 +9,7 @@ insert into works values (null, 1, 'test work 1', NOW(), 'Smth a story', 0),
     (null, 1, 'test work 3', NOW(), 'test storyyyy', 0);
 
 insert into chapters values (null, 1, 1, '1_1.txt'), (null,2, 1,'1_2.txt'),
-    (null, 3, 1, '1_3.txt'), (null, 4, 1'1_4.txt'), (null, 1, 2, '2_1.txt'),(null, 2, 2, '2_2.txt'),
+    (null, 3, 1, '1_3.txt'), (null, 4, 1, '1_4.txt'), (null, 1, 2, '2_1.txt'),(null, 2, 2, '2_2.txt'),
     (null, 1, 3, '3_1.txt'), (null, 2, 3, '3_2.txt'), (null, 3, 3, '3_3.txt');
 
 -- genre ('Romance','Fantasy','Horror','Sci-Fi','Historical','Mystery','Humor','Literary', 
