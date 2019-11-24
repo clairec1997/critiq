@@ -17,7 +17,6 @@ ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 #CONN = 'ccannatt_db'
 #CONN = 'spulavar_db'
 
-
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -109,7 +108,6 @@ def login():
         flash('form submission error '+str(err))
         return redirect( url_for('index') )
 
-
 @app.route('/profile/') #allow everyone to access all profiles, but only if logged in can change data
 def profile(uid):
     try:
@@ -180,7 +178,6 @@ def update(sid, cid):
     except Exception as err:
         flash('some kind of error '+str(err))
         return redirect( url_for('index') )
-
 
 @app.route('/read/<int:sid>', defaults={'cnum': 1})
 @app.route('/read/<int:sid>/<int:cnum>/')
