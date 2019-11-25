@@ -104,3 +104,8 @@ def addTags(conn, sid, genre, warnings, audience, isFin):
 def getStoryTags(conn, sid):
     curs = dbi.cursor(conn)
     pass
+
+def addComment(conn, commentText, uid, sid):
+    curs = dbi.cursor(conn)
+    curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
+    curs.execute('''insert into reviewCredits values(null, %s)''', [sid])

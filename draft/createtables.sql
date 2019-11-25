@@ -1,9 +1,8 @@
-drop table if exists credit;
-drop table if exists chapters;
-drop table if exists comments;
-drop table if exists reviews;
+-- drop table if exists reviewCredit;
+-- drop table if exists reviews;
 drop table if exists taglink;
 drop table if exists tags;
+drop table if exists chapters;
 drop table if exists works;
 drop table if exists users;
 
@@ -62,22 +61,35 @@ create table taglink (
     sid int not null,
 
     foreign key(sid) references works(sid)
-        on update CASCADE
+        on update cascade
         on delete cascade,
     foreign key(tid) references tags(tid)
-        on update CASCADE
+        on update cascade
         on delete cascade
 )
 
 Engine = InnoDB;
 
-create table comments (
-    cid int not null auto_increment primary key,
+create table reviews (
+    rid int not null auto_increment primary key,
     commenter int not null,
     ishelpful int,
-    txt varchar(2000)
+    reviewText varchar(2000),
+    foreign key(commenter) references users(uid)
 )
 
--- create table reviews (
---     sid int not null
--- )
+create table reviewCredits ( 
+    rid int,
+    sid int,
+
+    primary key(rid, sid),
+
+    foreign key(rid) references comments(rid)
+        on update cascade
+        on delete cascade,
+    foreign key(sid) references works(sid)
+        on update cascade
+        on delete cascade
+)
+
+Engine = InnoDB;

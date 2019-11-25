@@ -14,7 +14,7 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 #CONN = 'sbussey_db'
-#CONN = 'ccannatt_db'
+CONN = 'ccannatt_db'
 #CONN = 'spulavar_db'
 
 app = Flask(__name__)
@@ -224,16 +224,20 @@ def read(sid, cnum):
     story = lookup.getChapter(conn, sid, cnum)
     author = lookup.getAuthor(conn, sid)
     print(author)
+    if 'username' not in session:
+        return redirect(url_for('index'))
     if session['username'] == author['username']:
         return render_template('read.html', 
                             title="Hello", 
                             story=story,
                             author=author['username'],
-                            update=update)
+                            update=True)
     else:
-        flash('''You are not logged in as the user for this work.
-        Please log in and try again.''')
-        return redirect(url_for('index'))
+        return render_template('read.html', 
+                            title="Hello", 
+                            story=story,
+                            author=author['username'],
+                            update=False)
 
 @app.route('/bookmarks/')
 def bookmarks():
@@ -250,6 +254,16 @@ def recommendations():
                        ]    
     return render_template('recommendations.html',
                             recommendations=recommendation)
+
+@app.route('/uploaded/<filename>')
+def uploaded(filename):
+    pass
+
+@app.route('/addComment/', methods=["POST"])
+def addComment():
+    commentText = request.form.get("commentText")
+    print(commentText)
+    pass
 
 @app.route('/logout/')
 def logout():
@@ -273,11 +287,12 @@ def logout():
 def worksByTerm(search_kind, search_term):
      term = search_term
      kind = search_kind
+     conn = lookup.getConn(CONN)
     
      #search for works like the search term
      #if no search term, defaults to all movies 
      
-     res = lookup.searchWorks(CONN, term) if (kind=="work") else lookup.searchAuthors(CONN, term)
+     res = lookup.searchWorks(conn, term) if (kind=="work") else lookup.searchAuthors(conn, term)
      
     
      if not res:
