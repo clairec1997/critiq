@@ -60,21 +60,19 @@ def searchAuthors(conn, author):
 def getStories(conn, uid):
     '''Returns all works associated with an account'''
     curs=dbi.dictCursor(conn)
-    curs.execute('''select * from users 
-                inner join credit on (users.uid = credit.uid) 
-                inner join works on (credit.sid = credit.uid) 
+    curs.execute('''select * from works
                 where uid = %s''', [uid])
     return curs.fetchall()
 
-def getStory(conn, sid):
-    '''returns chapter 1 of a story'''
+def getChapter(conn, sid, cnum):
+    '''returns a chapter of a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select works.summary as summary, 
                     works.title as title, 
                     chapters.filename as filename 
                 from works inner join chapters using (sid)
-                where sid=%s
-                ''', [sid])
+                where sid=%s and cnum=%s
+                ''', [sid, cnum])
     return curs.fetchone()
 
 def getAuthor(conn, sid):
@@ -91,7 +89,8 @@ def getTags(conn, type):
 def addStory(conn, uid, title, summary):
     curs = dbi.cursor(conn)
     curs.execute('''insert into works(uid, title, summary)
-                    (%s, %s, %s)''', [uid, title, summary])
+                    values (%s, %s, %s)''', 
+                    [uid, title, summary])
     curs.execute('select last_insert_id()')
     return curs.fetchone()
 
@@ -100,4 +99,8 @@ def addTags(conn, sid, genre, warnings, audience, isFin):
     tagslist = [*genre, *warnings, *audience, *isFin]
     for i in tagslist:
         curs.execute('''insert into taglink(tid, sid)
-        (%s, %s)''', [i, sid])
+        values (%s, %s)''', [i, sid])
+
+def getStoryTags(conn, sid):
+    curs = dbi.cursor(conn)
+    pass
