@@ -81,7 +81,6 @@ create table reviewCredits (
     rid int not null,
     cid int not null,
 
-
     primary key(rid, cid),
 
     foreign key(rid) references reviews(rid)

@@ -53,8 +53,6 @@ def join():
             return redirect( url_for('index'))
         hashed = bcrypt.hashpw(passwd1.encode('utf-8'), bcrypt.gensalt())
         hashed_str = hashed.decode('utf-8')
-        print(type(hashed_str))
-        print(passwd1, type(passwd1), hashed, hashed_str)
 
         conn = lookup.getConn(CONN)
         try:
@@ -87,24 +85,17 @@ def login():
             flash('login incorrect. Try again or join')
             return redirect( url_for('index'))
         hashed = row['passhash'] 
-        print(type(hashed))
-        print('hashed: {} {}'.format(hashed,type(hashed)))
-        print('passwd: {}'.format(passwd))
-        print('hashed.encode: {}'.format(hashed.encode('utf-8')))
         
         hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))#.encode('utf-8'))
         hashed2_str = hashed2.decode('utf-8')
-        print('bcrypt: {}'.format(hashed2))
-        print('str(bcrypt): {}'.format(str(hashed)))
-        print('bc.decode: {}'.format(hashed2.decode('utf-8')))
-        print('equal? {}'.format(hashed==hashed2.decode('utf-8')))
+        
         if hashed2_str == hashed:
             flash('successfully logged in as '+username)
             session['username'] = username
             session['uid'] = row['uid']
             print(session['uid'])
             session['logged_in'] = True
-            session['visits'] = 1
+            # session['visits'] = 1
             return redirect( url_for('profile', uid=session['uid']) )
         else:
             flash('login incorrect. Try again or join')
@@ -222,6 +213,8 @@ def update(sid, cnum):
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
     story = lookup.getChapter(conn, sid, cnum)
+    print('Story object:')
+    print(story)
     author = lookup.getAuthor(conn, sid)
     print(author)
     if 'username' not in session:
@@ -267,7 +260,7 @@ def uploaded(filename):
 def addComment():
     conn = lookup.getConn(CONN)
     commentText = request.form.get("commentText")
-    print(commentText)
+    # print(commentText)
     cid = request.form.get('cid')
     cnum = request.form.get('cnum')
     sid = request.form.get('sid')
@@ -276,6 +269,31 @@ def addComment():
         lookup.addComment(conn, commentText, uid, cid)
         flash('Comment submitted!')
         return redirect( url_for('read', cnum=cnum, sid=sid))
+
+@app.route('/addCommentAjax/', methods=["POST"])
+def addCommentAjax():
+    conn = lookup.getConn(CONN)
+    commentText = request.form.get("commentText")
+    print(commentText)
+    cid = request.form.get('cid')
+    cnum = request.form.get('cnum')
+    sid = request.form.get('sid')
+    try:
+        if 'uid' in session:
+            uid = session['uid']
+            lookup.addComment(conn, commentText, uid, cid)
+            flash('Comment submitted!')
+            return jsonify(error=False,
+                            commentText=commentText,
+                            uid=uid,
+                            cid=cid
+                            )
+        else:
+            flash("Log in before commenting.")
+            return redirect(url_for('index'))
+    except Exception as err:
+        print(err)
+        return jsonify( {'error': True, 'err': str(err) } )
 
 @app.route('/logout/')
 def logout():
