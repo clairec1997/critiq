@@ -1,13 +1,23 @@
-{% extends base.html %}
+{% extends 'base.html' %}
 
+{% block content %}
 <body>
 
-    <form action="" method="POST" onsubmit="Submit();">
+    <form action="" method="POST">
+        <label>Chapter Title: <input type="text" name="title"></label>
         <textarea id="tinytext" name="write"></textarea>
         <input type="submit" name="submit">
     </form>
 
 <script src="{{ url_for('static', filename='tinyeditor.js') }}"></script>
-        
+
+{% if filename %}
+
+<script>
+    tinymce.get('').setContent()
+</script>
+
+{% endif %}
+
 </body>
-</html>
+{% endblock %}
