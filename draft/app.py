@@ -8,7 +8,6 @@ import sys,os,random
 import lookup
 import bleach
 import bcrypt
-from pathlib import Path
 
 UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
