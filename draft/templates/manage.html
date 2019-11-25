@@ -1,10 +1,10 @@
-{% extends 'base.html %}
+{% extends 'base.html' %}
 
 {% block content %}
 
 {% if stories %}
 
-    {% for story in stories%}
+    {% for story in stories %}
     <div class="managestory">
         <a href= "{{ url_for('update', sid=story['sid']) }}">
             <p>Title: {{ story['title'] }} </p>
