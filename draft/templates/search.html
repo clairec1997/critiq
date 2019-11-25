@@ -23,7 +23,7 @@
             {%for result in res %}
 	    {% if kind=="work" %}
             <tr work-sid="{{result['sid']}}">
-                <td class="title">{{result['title']}}</td>
+                <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
                 <td class="author">{{result['username']}}</td>
                 <td class="chapter-cnt">{{result['count(sid)']}}</td>
                 <td class="updated">{{result['updated']}}</td>

@@ -224,16 +224,24 @@ def read(sid, cnum):
     story = lookup.getChapter(conn, sid, cnum)
     author = lookup.getAuthor(conn, sid)
     print(author)
+    if 'username' not in session:
+        return redirect(url_for('index'))
     if session['username'] == author['username']:
         return render_template('read.html', 
                             title="Hello", 
                             story=story,
                             author=author['username'],
-                            update=update)
+                            cnum=cnum,
+                            sid=sid,
+                            update=True)
     else:
-        flash('''You are not logged in as the user for this work.
-        Please log in and try again.''')
-        return redirect(url_for('index'))
+        return render_template('read.html', 
+                            title="Hello", 
+                            story=story,
+                            author=author['username'],
+                            cnum=cnum,
+                            sid=sid,
+                            update=False)
 
 @app.route('/bookmarks/')
 def bookmarks():
@@ -250,6 +258,24 @@ def recommendations():
                        ]    
     return render_template('recommendations.html',
                             recommendations=recommendation)
+
+@app.route('/uploaded/<filename>')
+def uploaded(filename):
+    pass
+
+@app.route('/addComment/', methods=["POST"])
+def addComment():
+    conn = lookup.getConn(CONN)
+    commentText = request.form.get("commentText")
+    print(commentText)
+    cid = request.form.get('cid')
+    cnum = request.form.get('cnum')
+    sid = request.form.get('sid')
+    if 'uid' in session:
+        uid = session['uid']
+        lookup.addComment(conn, commentText, uid, cid)
+        flash('Comment submitted!')
+        return redirect( url_for('read', cnum=cnum, sid=sid))
 
 @app.route('/logout/')
 def logout():
@@ -273,11 +299,12 @@ def logout():
 def worksByTerm(search_kind, search_term):
      term = search_term
      kind = search_kind
+     conn = lookup.getConn(CONN)
     
      #search for works like the search term
      #if no search term, defaults to all movies 
      
-     res = lookup.searchWorks(CONN, term) if (kind=="work") else lookup.searchAuthors(CONN, term)
+     res = lookup.searchWorks(conn, term) if (kind=="work") else lookup.searchAuthors(conn, term)
      
     
      if not res:

@@ -6,16 +6,19 @@
 
 <h5>{{author}}</h5>
 
-<div class="unselectable">
-    {% include url_for('uploaded', filename=story.filename) %}
-</div>
+<!-- text here -->
 
 <!-- Need to include a Next Chapter Button -->
 
 <div id="commentForm">
-    <form>
-        <label>Comment:</label>
+    <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
+        <label>Add a comment on this chapter</label>
             <textarea name="commentText" rows="8" class="form-control"></textarea>
+            <br>
+            <input type="submit" class="btn btn-info" value="Comment">
+            <input value={{story.cid}} name="cid" type=hidden>
+            <input value={{cnum}} name="cnum" type=hidden>
+            <input value={{sid}} name="sid" type=hidden>
     </form>
 </div>
 
