@@ -14,7 +14,7 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 #CONN = 'sbussey_db'
-CONN = 'ccannatt_db'
+#CONN = 'ccannatt_db'
 #CONN = 'spulavar_db'
 
 app = Flask(__name__)
@@ -192,7 +192,7 @@ def update(sid, cnum):
 
             if request.method=="POST":
                 sometext = request.form['write']
-                somehtml = bleach.clean(sometext,
+                somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
                     tags=['b','blockquote','i','em','strong','p','ul','li','ol','span'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
