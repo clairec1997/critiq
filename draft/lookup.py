@@ -76,6 +76,12 @@ def getChapter(conn, sid, cnum):
                 ''', [sid, cnum])
     return curs.fetchone()
 
+def setChapter(conn, sid, cnum, filename):
+    curs = dbi.cursor(conn)
+    curs.execute('''insert into chapters(sid, cnum, filename)
+                values (%s, %s, %s)''',
+                [sid, cnum, filename])
+
 def getAuthor(conn, sid):
     curs = dbi.dictCursor(conn)
     curs.execute('''select username from works inner join users using (uid)

@@ -187,17 +187,19 @@ def add():
 @app.route('/update/<int:sid>/<int:cnum>/', methods=["GET","POST"])
 def update(sid, cnum):
     try:
-        if 'uid' in session:
-            uid = session['uid']
+        conn = lookup.getConn(CONN)
+        authorid = lookup.getAuthor(sid)
 
+        if 'uid' in session and session['uid']==authorid:
             if request.method=="GET":
-                conn = lookup.getConn(CONN)
-                #filename = lookup.getChapter(uid, sid, cnum)['filename']
-                story = None
-                #if the file exists, get the file
-
+                chapter = lookup.getChapter(conn, sid, cnum)
+                story = False
+                if chapter:
+                    infile = open(chapter['filename'], 'r')
+                    story = infile.read()
+                    infile.close()
                 return render_template('write.html', title='Update Story',
-                                sid=sid, cnum=cnum, story=story)
+                                sid=sid, cnum=cnum, story=story, cid=cid)
 
             if request.method=="POST":
                 sometext = request.form['write']
@@ -205,10 +207,19 @@ def update(sid, cnum):
                     tags=['b','blockquote','i','em','strong','p','ul','li','ol','span'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
-                
-                #save the file
 
-                return render_template('write.html')
+                filename = '/updated/'+'sid'+sid+'cnum'+cnum+'.html'
+
+                outfile = open(filename, 'r')
+                outfile.write(somehtml)
+                outfile.close()
+                
+                chapter = lookup.getChapter(conn,sid, cnum)
+
+                if not chapter:
+                    lookup.setChapter(conn, sid, cnum, filename)
+
+                return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
             flash('''You are not authorized to edit this work. 
                     Please log in with the account associated with this work''')
@@ -221,7 +232,12 @@ def update(sid, cnum):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    story = lookup.getChapter(conn, sid, cnum)
+    filename = lookup.getChapter(conn, sid, cnum)['filename']
+    
+    infile = open(chapter['filename'], 'r')
+    story = infile.read()
+    infile.close()
+    
     author = lookup.getAuthor(conn, sid)
     print(author)
     if 'username' not in session:
@@ -258,10 +274,6 @@ def recommendations():
                        ]    
     return render_template('recommendations.html',
                             recommendations=recommendation)
-
-@app.route('/uploaded/<filename>')
-def uploaded(filename):
-    pass
 
 @app.route('/addComment/', methods=["POST"])
 def addComment():
