@@ -136,59 +136,79 @@ def profile(uid):
 
 @app.route('/manage/')
 def manage():
-    if uid in session:
-        uid = session['uid']
-        conn = lookup.getConn(CONN)
-        stories = lookup.getStories(conn, uid)
-        return render_template('manage.html, title=Hello', stories=stories)
-    else: 
-        flash("Please log in or join")
-        redirect(url_for('index'))
+    try:
+        if 'uid' in session:
+            uid = session['uid']
+            conn = lookup.getConn(CONN)
+            stories = lookup.getStories(conn, uid)
+            return render_template('manage.html', title="Hello", stories=stories)
+        else: 
+            flash("Please log in or join")
+            return redirect(url_for('index'))
+    except Exception as err:
+        flash('error: '+str(err))
+        return redirect( url_for('index') )
     
 @app.route('/add/', methods=["GET", "POST"])
 def add():
-    if request.method == "GET":
-        if uid in session:
+    try:
+        if request.method == "GET":
+            if 'uid' in session:
+                uid = session['uid']
+                conn = lookup.getConn(CONN)
+                genre = lookup.getTags(conn, 'genre')
+                warnings = lookup.getTags(conn, 'warnings')
+                audience = lookup.getTags(conn, 'audience')
+                isFin = lookup.getTags(conn, 'isFin')
+                return render_template('add.html',title='Add Story', warnings=warnings, 
+                                    genre=genre, audience=audience, isFin=isFin)
+            else:
+                flash("Please log in or join")
+                return redirect(url_for('index'))
+        if request.method == "POST":
             uid = session['uid']
-            conn = lookup.getConn(CONN)
-            genre = lookup.getTags(conn, 'genre')
-            warnings = lookup.getTags(conn, 'warnings')
-            audience = lookup.getTags(conn, 'audience')
-            isFin = lookup.getTags(conn, 'isFin')
-            return render_template('add.html',title='Add Story', warnings=warnings, 
-                                genre=genre, audience=audience, isFin=isFin)
-        else:
-            flash("Please log in or join")
-            redirect(url_for('index'))
-    if request.method == "POST":
-        uid = session['uid']
-        title = request.form['title']
-        summary = request.form['summary']
-        genre = request.form.getlist('genre')
-        audience = request.form['audience']
-        warnings = request.form.getlist('warnings')
-        status = request.form['isFin']
+            title = request.form['title']
+            summary = request.form['summary']
+            genre = request.form.getlist('genre')
+            audience = request.form['audience']
+            warnings = request.form.getlist('warnings')
+            status = request.form['isFin']
         
-        conn = lookup.getConn(CONN)
-        sid = lookup.addStory(conn, uid, title, summary)
-        lookup.addTags(conn, sid, genre, warnings, audience, status)
+            conn = lookup.getConn(CONN)
+            sid = lookup.addStory(conn, uid, title, summary)
+            lookup.addTags(conn, sid, genre, warnings, audience, status)
 
-        return redirect(url_for('update', sid=sid))
+            return redirect(url_for('update', sid=sid))
+    except Exception as err:
+        flash('error: '+str(err))
+        return redirect( url_for('index') )
 
-@app.route('/update/<int:sid>', defaults={'cnum':1})
+@app.route('/update/<int:sid>/', defaults={'cnum':1}, methods=["GET","POST"])
 @app.route('/update/<int:sid>/<int:cnum>/', methods=["GET","POST"])
-def update(sid, cid):
+def update(sid, cnum):
     try:
         if 'uid' in session:
+            uid = session['uid']
+
             if request.method=="GET":
-                render_template('write.html', title='Update Story')
+                conn = lookup.getConn(CONN)
+                #filename = lookup.getChapter(uid, sid, cnum)['filename']
+                story = None
+                #if the file exists, get the file
+
+                return render_template('write.html', title='Update Story',
+                                sid=sid, cnum=cnum, story=story)
+
             if request.method=="POST":
                 sometext = request.form['write']
-                #bleach.clean(sometext,
-                 #   tags=['b','blockquote','i','em','strong','p','li','ol','s'], 
-                  #  attributes=[]])
-                #need to store as a file
-                render_template('write.html')
+                somehtml = bleach.clean(sometext,
+                    tags=['b','blockquote','i','em','strong','p','ul','li','ol','span'], 
+                    attributes=['style'],
+                    styles=['text-decoration', 'text-align'])
+                
+                #save the file
+
+                return render_template('write.html')
         else: 
             flash('''You are not authorized to edit this work. 
                     Please log in with the account associated with this work''')
@@ -201,7 +221,7 @@ def update(sid, cid):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    story = lookup.getStory(conn, sid)
+    story = lookup.getChapter(conn, sid, cnum)
     author = lookup.getAuthor(conn, sid)
     print(author)
     if session['username'] == author['username']:
