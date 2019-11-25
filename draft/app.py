@@ -231,12 +231,16 @@ def read(sid, cnum):
                             title="Hello", 
                             story=story,
                             author=author['username'],
+                            cnum=cnum,
+                            sid=sid,
                             update=True)
     else:
         return render_template('read.html', 
                             title="Hello", 
                             story=story,
                             author=author['username'],
+                            cnum=cnum,
+                            sid=sid,
                             update=False)
 
 @app.route('/bookmarks/')
@@ -261,9 +265,17 @@ def uploaded(filename):
 
 @app.route('/addComment/', methods=["POST"])
 def addComment():
+    conn = lookup.getConn(CONN)
     commentText = request.form.get("commentText")
     print(commentText)
-    pass
+    cid = request.form.get('cid')
+    cnum = request.form.get('cnum')
+    sid = request.form.get('sid')
+    if 'uid' in session:
+        uid = session['uid']
+        lookup.addComment(conn, commentText, uid, cid)
+        flash('Comment submitted!')
+        return redirect( url_for('read', cnum=cnum, sid=sid))
 
 @app.route('/logout/')
 def logout():

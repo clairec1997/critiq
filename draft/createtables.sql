@@ -79,14 +79,15 @@ ENGINE = InnoDB;
 
 create table reviewCredits ( 
     rid int not null,
-    sid int not null,
+    cid int not null,
 
-    primary key(rid, sid),
+
+    primary key(rid, cid),
 
     foreign key(rid) references reviews(rid)
         on update cascade
         on delete cascade,
-    foreign key(sid) references works(sid)
+    foreign key(cid) references chapters(cid)
         on update cascade
         on delete cascade
 )
