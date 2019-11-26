@@ -13,8 +13,8 @@ from pathlib import Path
 UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
-#CONN = 'sbussey_db'
-CONN = 'ccannatt_db'
+CONN = 'sbussey_db'
+#CONN = 'ccannatt_db'
 #CONN = 'spulavar_db'
 
 app = Flask(__name__)

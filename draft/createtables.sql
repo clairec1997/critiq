@@ -1,5 +1,6 @@
 -- drop table if exists reviewCredit;
 -- drop table if exists reviews;
+
 drop table if exists taglink;
 drop table if exists tags;
 drop table if exists chapters;
