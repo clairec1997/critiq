@@ -47,7 +47,7 @@ def index():
 @app.route('/getTags/', methods=["POST"])
 def getTags():
     conn = lookup.getConn(CONN)
-    tags = lookup.getTags(conn)
+    tags = lookup.getTagsAjax(conn)
 
     return jsonify( {'error': False, 'tags': tags} )
 
@@ -165,6 +165,7 @@ def add():
             else:
                 flash("Please log in or join")
                 return redirect(url_for('index'))
+                
         if request.method == "POST":
             uid = session['uid']
             title = request.form['title']
@@ -209,7 +210,6 @@ def update(sid, cnum):
                     tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
-                print(somehtml)
 
                 dirname = os.path.dirname(__file__)
                 relative = 'uploaded/'+'sid'+str(sid)+'cnum'+str(cnum)+'.html'

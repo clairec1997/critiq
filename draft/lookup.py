@@ -118,7 +118,8 @@ def addStory(conn, uid, title, summary):
                     [uid, title, summary])
     curs.execute('select last_insert_id()')
     return curs.fetchone()
-def getTags(conn):
+
+def getTagsAjax(conn):
     curs = dbi.dictCursor(conn)
     curs.execute('''select tname from tags''')
     return curs.fetchall()

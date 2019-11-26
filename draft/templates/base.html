@@ -107,16 +107,23 @@
 
 
 <script>
-  var URL = "{{url_for('getTags')}}"
+
+var URL = "{{url_for('getTags')}}"
 $("span.navbar-toggler-icon").on("click", function (event) {
-  $.post(URL, {'tags': {}}, get_tags)
+    $.ajax({
+        type: "POST",
+        url: URL, 
+        data: JSON.stringify({'tags': {}, 'tagtype':), 
+        contentType: 'application/json; charset=UTF-8',   
+        success: get_tags
+    });
 
   //for later versions
   // if ($("#select_tag option").length <= 1) {
   //   console.log($("#select_tag option").length)
   //   $.post(URL, {'tags': {}}, get_tags)
   // }
-})
+});
 
 function get_tags(obj) {
   var tags = Object.values(obj['tags']);
