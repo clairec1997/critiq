@@ -13,7 +13,7 @@
 <!-- Need to include a Next Chapter Button -->
 
 <div id="commentForm">
-    <form id="commentForm" method="POST">
+    <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
         <label>Add a comment on this chapter</label>
             <textarea name="commentText" rows="8" class="form-control"></textarea>
             <br>
@@ -28,39 +28,39 @@
 
 <script>
     $("#commentConfirmation").hide()
-    var progressive_on = true;
-    var URL = "{{url_for('addCommentAjax')}}"    
+    // var progressive_on = true;
+    // var URL = "{{url_for('addCommentAjax')}}"    
 
-    $("#commentSubmit").click(function() { 
-        console.log('adding comment with Ajax')
-        //turn on ajax
-        if (progressive_on) {
-            $(this).css("font-weight", "bold");
-            var commentText = $(this).closest("form").find("textarea").val()
-            console.log(commentText)
-            var cid = $(this).closest("form").find("#cid").val()
-            console.log(cid)
-            var cnum = $(this).closest("form").find("#cnum").val()
-            console.log(cnum)
-            var sid = $(this).closest("form").find("#sid").val()
-            console.log(sid)
-            var comment = $.post(URL, {'commentText': commentText,
-                                       'cid': cid,
-                                       'cnum': cnum,
-                                       'sid': sid}, showConfirmation)
-        }
-    });
+    // $("#commentSubmit").click(function() { 
+    //     console.log('adding comment with Ajax')
+    //     //turn on ajax
+    //     if (progressive_on) {
+    //         $(this).css("font-weight", "bold");
+    //         var commentText = $(this).closest("form").find("textarea").val()
+    //         console.log(commentText)
+    //         var cid = $(this).closest("form").find("#cid").val()
+    //         console.log(cid)
+    //         var cnum = $(this).closest("form").find("#cnum").val()
+    //         console.log(cnum)
+    //         var sid = $(this).closest("form").find("#sid").val()
+    //         console.log(sid)
+    //         var comment = $.post(URL, {'commentText': commentText,
+    //                                    'cid': cid,
+    //                                    'cnum': cnum,
+    //                                    'sid': sid}, showConfirmation)
+    //     }
+    // });
 
-    function showConfirmation(obj) {
-        console.log(obj);
+    // function showConfirmation(obj) {
+    //     console.log(obj);
 
-        if(obj.error) {
-            $("#errors").empty().html('Error: '+obj.err);
-            console.log('obj error')
-        } else {
-            $("#commentConfirmation").show();
-        }
-    }
+    //     if(obj.error) {
+    //         $("#errors").empty().html('Error: '+obj.err);
+    //         console.log('obj error')
+    //     } else {
+    //         $("#commentConfirmation").show();
+    //     }
+    // }
 
 </script>
 
