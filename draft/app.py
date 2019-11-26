@@ -14,7 +14,7 @@ ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 #CONN = 'sbussey_db'
 #CONN = 'ccannatt_db'
-#CONN = 'spulavar_db'
+CONN = 'spulavar_db'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -178,7 +178,8 @@ def add():
 def update(sid, cnum):
     try:
         conn = lookup.getConn(CONN)
-        authorid = lookup.getAuthor(sid)
+        authorid = lookup.getAuthorId(conn,sid)[0]
+        print(authorid, session['uid'])
 
         if 'uid' in session and session['uid']==authorid:
             if request.method=="GET":
@@ -189,22 +190,26 @@ def update(sid, cnum):
                     story = infile.read()
                     infile.close()
                 return render_template('write.html', title='Update Story',
-                                sid=sid, cnum=cnum, story=story, cid=cid)
+                                sid=sid, cnum=cnum, story=story)
 
             if request.method=="POST":
+                ctitle = request.form['title']
                 sometext = request.form['write']
                 somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
                     tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
+                print(somehtml)
 
-                filename = '/updated/'+'sid'+sid+'cnum'+cnum+'.html'
+                dirname = os.path.dirname(__file__)
+                relative = 'uploaded/'+'sid'+str(sid)+'cnum'+str(cnum)+'.html'
+                filename = os.path.join(dirname, relative)
 
-                outfile = open(filename, 'r')
+                outfile = open(filename, 'w')
                 outfile.write(somehtml)
                 outfile.close()
                 
-                chapter = lookup.getChapter(conn,sid, cnum)
+                chapter = lookup.getChapter(conn,sid,cnum)
 
                 if not chapter:
                     lookup.setChapter(conn, sid, cnum, filename)
@@ -222,8 +227,8 @@ def update(sid, cnum):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    filename = lookup.getChapter(conn, sid, cnum)['filename']
-    
+    chapter = lookup.getChapter(conn, sid, cnum)
+
     infile = open(chapter['filename'], 'r')
     story = infile.read()
     infile.close()
