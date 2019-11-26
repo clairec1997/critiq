@@ -69,11 +69,18 @@ def getChapter(conn, sid, cnum):
     curs = dbi.dictCursor(conn)
     curs.execute('''select works.summary as summary, 
                     works.title as title, 
-                    chapters.filename as filename 
+                    chapters.filename as filename,
+                    chapters.cid as cid 
                 from works inner join chapters using (sid)
                 where sid=%s and cnum=%s
                 ''', [sid, cnum])
     return curs.fetchone()
+
+def setChapter(conn, sid, cnum, filename):
+    curs = dbi.cursor(conn)
+    curs.execute('''insert into chapters(sid, cnum, filename)
+                values (%s, %s, %s)''',
+                [sid, cnum, filename])
 
 def getAuthor(conn, sid):
     curs = dbi.dictCursor(conn)
@@ -105,7 +112,11 @@ def getStoryTags(conn, sid):
     curs = dbi.cursor(conn)
     pass
 
-def addComment(conn, commentText, uid, sid):
+def addComment(conn, commentText, uid, cid,):
     curs = dbi.cursor(conn)
     curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
-    curs.execute('''insert into reviewCredits values(null, %s)''', [sid])
+    curs.execute('select LAST_INSERT_ID()')
+    row = curs.fetchone()
+    # print(row)
+    rid = row[0]
+    curs.execute('''insert into reviewCredits values(%s, %s)''', [rid, cid])

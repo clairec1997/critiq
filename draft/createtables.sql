@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 -- drop table if exists reviewCredit;
 -- drop table if exists reviews;
 
+=======
+drop table if exists reviewCredits;
+drop table if exists reviews;
+>>>>>>> 19fdcd4e46d2b64752911bc779711e71809503de
 drop table if exists taglink;
 drop table if exists tags;
 drop table if exists chapters;
@@ -14,18 +19,15 @@ create table users (
     unique(username),
     index(username),
     commentscore DECIMAL
-)
-
-ENGINE = InnoDB;
+);
 
 create table works (
-    sid int not null auto_increment,
-    uid int not NULL,
+    sid int not null auto_increment primary key,
+    uid int not null,
     title VARCHAR(200),
     updated date,
     summary varchar(2000),
     stars float,
-    PRIMARY KEY (sid),
     index(uid),
     foreign key (uid) references users(uid)
         on UPDATE cascade
@@ -47,7 +49,7 @@ create table chapters (
         on delete cascade
 )
 
-Engine = InnoDB;
+ENGINE = InnoDB;
 
 create table tags (
     tid int not null auto_increment primary key,
@@ -55,7 +57,7 @@ create table tags (
     tname varchar(50) not null unique
 )
 
-Engine = InnoDB;
+ENGINE = InnoDB;
 
 create table taglink (
     tid int not null,
@@ -69,7 +71,7 @@ create table taglink (
         on delete cascade
 )
 
-Engine = InnoDB;
+ENGINE = InnoDB;
 
 create table reviews (
     rid int not null auto_increment primary key,
@@ -79,18 +81,20 @@ create table reviews (
     foreign key(commenter) references users(uid)
 )
 
+ENGINE = InnoDB;
+
 create table reviewCredits ( 
-    rid int,
-    sid int,
+    rid int not null,
+    cid int not null,
 
-    primary key(rid, sid),
+    primary key(rid, cid),
 
-    foreign key(rid) references comments(rid)
+    foreign key(rid) references reviews(rid)
         on update cascade
         on delete cascade,
-    foreign key(sid) references works(sid)
+    foreign key(cid) references chapters(cid)
         on update cascade
         on delete cascade
 )
 
-Engine = InnoDB;
+ENGINE = InnoDB;

@@ -8,7 +8,6 @@ import sys,os,random
 import lookup
 import bleach
 import bcrypt
-from pathlib import Path
 
 UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
@@ -53,8 +52,6 @@ def join():
             return redirect( url_for('index'))
         hashed = bcrypt.hashpw(passwd1.encode('utf-8'), bcrypt.gensalt())
         hashed_str = hashed.decode('utf-8')
-        print(type(hashed_str))
-        print(passwd1, type(passwd1), hashed, hashed_str)
 
         conn = lookup.getConn(CONN)
         try:
@@ -87,24 +84,17 @@ def login():
             flash('login incorrect. Try again or join')
             return redirect( url_for('index'))
         hashed = row['passhash'] 
-        print(type(hashed))
-        print('hashed: {} {}'.format(hashed,type(hashed)))
-        print('passwd: {}'.format(passwd))
-        print('hashed.encode: {}'.format(hashed.encode('utf-8')))
         
         hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))#.encode('utf-8'))
         hashed2_str = hashed2.decode('utf-8')
-        print('bcrypt: {}'.format(hashed2))
-        print('str(bcrypt): {}'.format(str(hashed)))
-        print('bc.decode: {}'.format(hashed2.decode('utf-8')))
-        print('equal? {}'.format(hashed==hashed2.decode('utf-8')))
+        
         if hashed2_str == hashed:
             flash('successfully logged in as '+username)
             session['username'] = username
             session['uid'] = row['uid']
             print(session['uid'])
             session['logged_in'] = True
-            session['visits'] = 1
+            # session['visits'] = 1
             return redirect( url_for('profile', uid=session['uid']) )
         else:
             flash('login incorrect. Try again or join')
@@ -187,28 +177,39 @@ def add():
 @app.route('/update/<int:sid>/<int:cnum>/', methods=["GET","POST"])
 def update(sid, cnum):
     try:
-        if 'uid' in session:
-            uid = session['uid']
+        conn = lookup.getConn(CONN)
+        authorid = lookup.getAuthor(sid)
 
+        if 'uid' in session and session['uid']==authorid:
             if request.method=="GET":
-                conn = lookup.getConn(CONN)
-                #filename = lookup.getChapter(uid, sid, cnum)['filename']
-                story = None
-                #if the file exists, get the file
-
+                chapter = lookup.getChapter(conn, sid, cnum)
+                story = False
+                if chapter:
+                    infile = open(chapter['filename'], 'r')
+                    story = infile.read()
+                    infile.close()
                 return render_template('write.html', title='Update Story',
-                                sid=sid, cnum=cnum, story=story)
+                                sid=sid, cnum=cnum, story=story, cid=cid)
 
             if request.method=="POST":
                 sometext = request.form['write']
-                somehtml = bleach.clean(sometext,
-                    tags=['b','blockquote','i','em','strong','p','ul','li','ol','span'], 
+                somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
+                    tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
-                
-                #save the file
 
-                return render_template('write.html')
+                filename = '/updated/'+'sid'+sid+'cnum'+cnum+'.html'
+
+                outfile = open(filename, 'r')
+                outfile.write(somehtml)
+                outfile.close()
+                
+                chapter = lookup.getChapter(conn,sid, cnum)
+
+                if not chapter:
+                    lookup.setChapter(conn, sid, cnum, filename)
+
+                return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
             flash('''You are not authorized to edit this work. 
                     Please log in with the account associated with this work''')
@@ -221,7 +222,12 @@ def update(sid, cnum):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    story = lookup.getChapter(conn, sid, cnum)
+    filename = lookup.getChapter(conn, sid, cnum)['filename']
+    
+    infile = open(chapter['filename'], 'r')
+    story = infile.read()
+    infile.close()
+    
     author = lookup.getAuthor(conn, sid)
     print(author)
     if 'username' not in session:
@@ -231,12 +237,16 @@ def read(sid, cnum):
                             title="Hello", 
                             story=story,
                             author=author['username'],
+                            cnum=cnum,
+                            sid=sid,
                             update=True)
     else:
         return render_template('read.html', 
                             title="Hello", 
                             story=story,
                             author=author['username'],
+                            cnum=cnum,
+                            sid=sid,
                             update=False)
 
 @app.route('/bookmarks/')
@@ -255,15 +265,44 @@ def recommendations():
     return render_template('recommendations.html',
                             recommendations=recommendation)
 
-@app.route('/uploaded/<filename>')
-def uploaded(filename):
-    pass
-
 @app.route('/addComment/', methods=["POST"])
 def addComment():
+    conn = lookup.getConn(CONN)
+    commentText = request.form.get("commentText")
+    # print(commentText)
+    cid = request.form.get('cid')
+    cnum = request.form.get('cnum')
+    sid = request.form.get('sid')
+    if 'uid' in session:
+        uid = session['uid']
+        lookup.addComment(conn, commentText, uid, cid)
+        flash('Comment submitted!')
+        return redirect( url_for('read', cnum=cnum, sid=sid))
+
+@app.route('/addCommentAjax/', methods=["POST"])
+def addCommentAjax():
+    conn = lookup.getConn(CONN)
     commentText = request.form.get("commentText")
     print(commentText)
-    pass
+    cid = request.form.get('cid')
+    cnum = request.form.get('cnum')
+    sid = request.form.get('sid')
+    try:
+        if 'uid' in session:
+            uid = session['uid']
+            lookup.addComment(conn, commentText, uid, cid)
+            flash('Comment submitted!')
+            return jsonify(error=False,
+                            commentText=commentText,
+                            uid=uid,
+                            cid=cid
+                            )
+        else:
+            flash("Log in before commenting.")
+            return redirect(url_for('index'))
+    except Exception as err:
+        print(err)
+        return jsonify( {'error': True, 'err': str(err) } )
 
 @app.route('/logout/')
 def logout():
