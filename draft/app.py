@@ -324,20 +324,22 @@ def logout():
 @app.route('/search/<search_kind>', defaults={'search_term': ""})
 @app.route('/search/<search_kind>/<search_term>', methods=["GET"])
 def worksByTerm(search_kind, search_term):
-     term = search_term
-     kind = search_kind
-     conn = lookup.getConn(CONN)
-    
-     #search for works like the search term
-     #if no search term, defaults to all movies 
-     
-     res = lookup.searchWorks(conn, term) if (kind=="work") else lookup.searchAuthors(conn, term)
-     
-    
-     if not res:
-         flash("No {} found including: {} :( ".format(kind, term))
+    term = search_term
+    kind = search_kind
+    conn = lookup.getConn(CONN)
 
-     return render_template('search.html', kind=kind, res=res)
+    #search for works like the search term
+    #if no search term, defaults to all movies 
+    
+    res = (lookup.searchAuthors(conn, term) if kind == "author" 
+    else lookup.searchWorks(conn, kind, term))
+
+    resKind = "Authors" if kind == "author" else "Works"
+    nm = "Tag" if (kind == "tag") else "Term"
+    if not res:
+        flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
+
+    return render_template('search.html', resKind=resKind, term=term, res=res)
 
 if __name__ == '__main__':
 

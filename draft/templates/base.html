@@ -44,9 +44,21 @@
                       <input required type="radio" name="search_kind" value="author">
                       By Author
                   </label>
+                  <label>
+                    <input required type="radio" name="search_kind" value="tag">
+                    By Tag
+                  </label>
                   <!-- </fieldset> -->
-                  <label for="search_term">Search Works: </label>
-                              <input name="search_term" value="">
+                  <label id="searchlabel">
+                    Search Works: 
+                    <input id="term" name="search_term" value="">
+                  </label>
+                  <label id="selTag">
+                    Select Desired Tag: 
+                    <select id="select_tag" name="select_tag">
+                      <option value="">Select a Tag</option>
+                    </select>
+                  </label>
                   <input type="submit" name="submit-btn" value="Search">
                 </form>
               </li>
@@ -86,10 +98,42 @@
     {% block content %}
     <h1>Welcome!</h1>
     {% endblock %}
+    
+
   </div>
 
   <div class="col-xl-2 col-lg-2 col-md-1 col-sm-1 col-xs-1"></div>
 </div>
 
+<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js" ></script>-->
+<!-- <script src="../static/searchKind.js"></script> -->
+<script>
+console.log("why")
+$("input[value='tag']").on("click", function (event) {
+        console.log($(this).closest("form").find("label#searchlabel"))
+        $(this).closest("form")
+               .find("label#searchlabel").hide()
+        $(this).closest("form")
+               .find("label#selTag").show()         
+        // console.log($("label").attr("for", "search_term"));
+})
+$("input[value='work']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#selTag").hide()
+        $(this).closest("form")
+               .find("label#searchlabel").show()         
+        // console.log($("label").attr("for", "search_term"));
+})
+$("input[value='author']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#selTag").hide()
+        $(this).closest("form")
+               .find("label#searchlabel").show()         
+        // console.log($("label").attr("for", "search_term"));
+})
+</script>
 </body>
 </html>
+
+
+

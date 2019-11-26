@@ -6,12 +6,12 @@
     <h4>Title: <span id='title'></span> Directed By: <span id='director'></span> 
         Release: <span id='release'></span></h4>
 </div> -->
-
+<p> {{res}}</p>
 <div id="results">
-        <h1>List of {{kind}} </h1>
+        <h1>Search Results for {{resKind}}: '{{term}}' </h1>
         <table id="res-list">
             <tr>
-	      {% if kind=="work" %}
+	      {% if resKind=="Works" %}
                 <th>Title</th>
                 <th>Author</th>
                 <th>Chapter Count </th>
@@ -21,7 +21,7 @@
 	      {% endif %}
             </tr>
             {%for result in res %}
-	    {% if kind=="work" %}
+	    {% if resKind=="Works" %}
             <tr work-sid="{{result['sid']}}">
                 <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
                 <td class="author">{{result['username']}}</td>
@@ -39,22 +39,5 @@
         </table>
 
 </div>
-
-<script src="//ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-<script>
-// $('tr').on('click', '.feature-button', function (event) { 
-//     tt = $(this).closest('tr').data()
-//     row = $(this).closest('tr').find('td')
-//     title = $(row[0]).text()
-//     director = $(row[1]).text()
-//     release = $(row[2]).text()
-//     console.log(title, director, release)
-//     $("span").eq(0).text(tt['tt'])
-//     $("span").eq(1).text(title)
-//     $("span").eq(2).text(director)
-//     $("span").eq(3).text(release)
-//     $('#featured-movie').show()
-})
-</script>
 
 {%endblock%}

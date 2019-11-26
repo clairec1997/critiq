@@ -36,17 +36,29 @@ def getLogin(conn, username):
                      [username])
     return curs.fetchone()
 
-def searchWorks(conn, searchterm):
-    '''finds works with title including searchterm'''
+def searchWorks(conn, kind, searchterm):
+    '''finds works with title including searchterm or tag = searchterm'''
     curs = dbi.dictCursor(conn)
-    curs.execute(''' select * from 
+    if kind == "work":
+        curs.execute(''' select * from 
                         (select sid, uid, title, updated, 
                         summary, stars, count(sid) from
                                 (select * from works where title like %s) 
                         as q1 left outer join chapters using(sid) group by sid) 
                         as q2 left outer join 
-                 (select uid, username from users) as q3 using(uid)''', 
-                 ['%' + searchterm + '%'])
+                        (select uid, username from users) as q3 using(uid)''', 
+                        ['%' + searchterm + '%'])
+    else:
+        curs.execute('''select * from (select sid, uid, title, updated, 
+                        summary, stars, count(sid) from 
+                        (select tid from tags where tname = %s) as q1 
+                        left outer join (select tid, sid from taglink) as q2
+                        using(tid) 
+                        left outer join works using(sid)
+                        left outer join chapters using(sid) group by sid) as q3
+                        left outer join (select uid, username from users) as q4
+                        using(uid)''', [searchterm])
+        
     return curs.fetchall()
 
 def searchAuthors(conn, author):

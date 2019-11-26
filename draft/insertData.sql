@@ -46,6 +46,6 @@ insert into tags values (null, 'warnings', 'Violence'), (null, 'warnings', 'Gore
 insert into tags values (null, 'isFin', 'Finished'), (null, 'isFin', 'Work in Progress');
 
 -- genre ids from 1 to 11, audience from 12 to 14, warnings from 15 to 31, isFin either 32 or 33
-insert into taglink values (1, 1), (1, 2), (1, 8), (1, 13), (1, 18), (1, 28), (1, 17), (1, 32),
-    (2, 33), (2, 14), (2, 7), (2, 11), (2, 15), (2, 17), (2,19),
-    (3, 33), (3, 19), (3, 18), (3, 12), (3, 25), (3, 10);
+insert into taglink values (1, 1), (1, 2), (8, 1), (13, 1), (18, 1), (28, 1), (17, 1), (32, 1),
+    (33, 2), (14, 2), (7, 2), (11, 2), (15, 2), (17, 2), (19,2),
+    (33, 3), (19, 3), (18, 3), (12, 3), (25, 3), (10, 3);

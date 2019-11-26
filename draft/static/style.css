@@ -21,3 +21,9 @@ h1 {
     -ms-user-select: none;
     user-select: none;
 }
+#selTag {
+    display: none;
+}
+.search_term {
+    visibility: visible;
+}

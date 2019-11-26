@@ -1,11 +1,5 @@
-<<<<<<< HEAD
--- drop table if exists reviewCredit;
--- drop table if exists reviews;
-
-=======
 drop table if exists reviewCredits;
 drop table if exists reviews;
->>>>>>> 19fdcd4e46d2b64752911bc779711e71809503de
 drop table if exists taglink;
 drop table if exists tags;
 drop table if exists chapters;
