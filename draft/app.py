@@ -31,16 +31,26 @@ app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 
 @app.route('/', methods=["GET", "POST"])
 def index():
+
     if request.method == "POST":
-        term = request.form.get('search_term')
         kind = request.form.get('search_kind')
+        term = (request.form.get('select_tag') if kind == "tag" 
+                else request.form.get('search_term'))
+
         return redirect(url_for('worksByTerm', search_kind=kind, search_term=term))    
     else:
         if 'username' in session:
             return redirect( url_for('recommendations'))
         else:
             return render_template('main.html',title='Hello')
-        
+
+@app.route('/getTags/', methods=["POST"])
+def getTags():
+    conn = lookup.getConn(CONN)
+    tags = lookup.getTags(conn)
+
+    return jsonify( {'error': False, 'tags': tags} )
+
 @app.route('/join/', methods=["POST"])
 def join():
     try:
@@ -338,7 +348,7 @@ def worksByTerm(search_kind, search_term):
     nm = "Tag" if (kind == "tag") else "Term"
     if not res:
         flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
-
+    #return "<p>{}</p>".format(res)
     return render_template('search.html', resKind=resKind, term=term, res=res)
 
 if __name__ == '__main__':

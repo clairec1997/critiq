@@ -112,7 +112,11 @@ def addStory(conn, uid, title, summary):
                     [uid, title, summary])
     curs.execute('select last_insert_id()')
     return curs.fetchone()
-
+def getTags(conn):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select tname from tags''')
+    return curs.fetchall()
+    
 def addTags(conn, sid, genre, warnings, audience, isFin):
     curs = dbi.cursor(conn)
     tagslist = [*genre, *warnings, *audience, *isFin]

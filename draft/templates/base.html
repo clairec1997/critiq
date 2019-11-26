@@ -105,31 +105,43 @@
   <div class="col-xl-2 col-lg-2 col-md-1 col-sm-1 col-xs-1"></div>
 </div>
 
-<!-- <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js" ></script>-->
-<!-- <script src="../static/searchKind.js"></script> -->
+
 <script>
-console.log("why")
+  var URL = "{{url_for('getTags')}}"
+$("span.navbar-toggler-icon").on("click", function (event) {
+  $.post(URL, {'tags': {}}, get_tags)
+
+  //for later versions
+  // if ($("#select_tag option").length <= 1) {
+  //   console.log($("#select_tag option").length)
+  //   $.post(URL, {'tags': {}}, get_tags)
+  // }
+})
+
+function get_tags(obj) {
+  var tags = Object.values(obj['tags']);
+  for (var tag of tags) {
+        $("select#select_tag").append(new Option(tag['tname'], tag['tname']));
+  }
+}
+
 $("input[value='tag']").on("click", function (event) {
-        console.log($(this).closest("form").find("label#searchlabel"))
         $(this).closest("form")
                .find("label#searchlabel").hide()
         $(this).closest("form")
-               .find("label#selTag").show()         
-        // console.log($("label").attr("for", "search_term"));
+               .find("label#selTag").show()  
 })
 $("input[value='work']").on("click", function (event) {
         $(this).closest("form")
                .find("label#selTag").hide()
         $(this).closest("form")
                .find("label#searchlabel").show()         
-        // console.log($("label").attr("for", "search_term"));
 })
 $("input[value='author']").on("click", function (event) {
         $(this).closest("form")
                .find("label#selTag").hide()
         $(this).closest("form")
                .find("label#searchlabel").show()         
-        // console.log($("label").attr("for", "search_term"));
 })
 </script>
 </body>

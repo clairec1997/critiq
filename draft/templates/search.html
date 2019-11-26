@@ -6,7 +6,6 @@
     <h4>Title: <span id='title'></span> Directed By: <span id='director'></span> 
         Release: <span id='release'></span></h4>
 </div> -->
-<p> {{res}}</p>
 <div id="results">
         <h1>Search Results for {{resKind}}: '{{term}}' </h1>
         <table id="res-list">
@@ -20,20 +19,25 @@
 		<th>Author Username</th>
 	      {% endif %}
             </tr>
-            {%for result in res %}
-	    {% if resKind=="Works" %}
+        {%for result in res %}
+        {% if resKind=="Works" %}
+            {% if result and result['sid'] %}   
             <tr work-sid="{{result['sid']}}">
                 <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
                 <td class="author">{{result['username']}}</td>
                 <td class="chapter-cnt">{{result['count(sid)']}}</td>
                 <td class="updated">{{result['updated']}}</td>
-            </tr>
+            </tr> 
+            {% else %}
+            <tr><td>No results found</td></tr>
+            {% endif %} 
 	    {% else %}
-	    <tr uid="{{result['uid']}}">
-	      <td class="uname">{{result['username']}}</td>
-	    </tr>
-	    {% endif %}
-            {%endfor%}
+	        <tr uid="{{result['uid']}}">
+	            <td class="uname">{{result['username']}}</td>
+	        </tr>
+        {% endif %}
+        
+        {%endfor%}
 	    
 
         </table>
