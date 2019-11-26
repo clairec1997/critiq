@@ -113,7 +113,7 @@ $("span.navbar-toggler-icon").on("click", function (event) {
     $.ajax({
         type: "POST",
         url: URL, 
-        data: JSON.stringify({'tags': {}, 'tagtype':), 
+        data: JSON.stringify({'tags': {}, 'tagtype':{}}), 
         contentType: 'application/json; charset=UTF-8',   
         success: get_tags
     });

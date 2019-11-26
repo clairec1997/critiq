@@ -2,13 +2,11 @@
 
 {% block content %}
 
-<h1>{{story.title}}</h1>
-
 <h5>{{author}}</h5>
 
 <!-- text here -->
 
-{% include filename %}
+{{ story|safe }}
 
 <!-- Need to include a Next Chapter Button -->
 

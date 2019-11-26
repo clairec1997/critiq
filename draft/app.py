@@ -14,7 +14,7 @@ ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 # CONN = 'sbussey_db'
 # CONN = 'ccannatt_db'
- CONN = 'spulavar_db'
+CONN = 'spulavar_db'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -195,7 +195,7 @@ def update(sid, cnum):
         if 'uid' in session and session['uid']==authorid:
             if request.method=="GET":
                 chapter = lookup.getChapter(conn, sid, cnum)
-                story = False
+                story = ""
                 if chapter:
                     infile = open(chapter['filename'], 'r')
                     story = infile.read()
@@ -243,15 +243,15 @@ def read(sid, cnum):
     story = infile.read()
     infile.close()
     
-    author = lookup.getAuthor(conn, sid)
-    print(author)
+    work = lookup.getStory(conn, sid)
+
     if 'username' not in session:
         return redirect(url_for('index'))
-    if session['username'] == author['username']:
+    if session['username'] == work['username']:
         return render_template('read.html', 
                             title="Hello", 
                             story=story,
-                            author=author['username'],
+                            author=work['username'],
                             cnum=cnum,
                             sid=sid,
                             update=True)

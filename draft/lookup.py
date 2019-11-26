@@ -76,6 +76,13 @@ def getStories(conn, uid):
                 where uid = %s''', [uid])
     return curs.fetchall()
 
+def getStory(conn, sid):
+    '''Returns a work with given sid'''
+    curs=dbi.dictCursor(conn)
+    curs.execute('''select * from works inner join users
+                    on users.uid=works.uid where sid=%s''', [sid])
+    return curs.fetchone()
+
 def getChapter(conn, sid, cnum):
     '''returns a chapter of a story'''
     curs = dbi.dictCursor(conn)

@@ -4,20 +4,14 @@
 <body>
 
     <form action="" method="POST">
-        <label>Chapter Title: <input type="text" name="title"></label>
         <textarea id="tinytext" name="write"></textarea>
         <input type="submit" name="submit">
     </form>
 
-<script src="{{ url_for('static', filename='tinyeditor.js') }}"></script>
-
-{% if filename %}
-
 <script>
-    tinymce.get('#tinytext').setContent( {{ story }} )
+var story = "{{story|safe}}"
 </script>
-
-{% endif %}
+<script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
 
 </body>
 {% endblock %}
