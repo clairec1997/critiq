@@ -34,7 +34,7 @@ create table chapters (
     cid int not null auto_increment,
     cnum int,
     sid int not NULL,
-    filename varchar(50),
+    filename varchar(100),
 
     PRIMARY KEY (cid),
     index(sid),

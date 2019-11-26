@@ -100,6 +100,12 @@ def getAuthor(conn, sid):
                     where sid=%s''', [sid])
     return curs.fetchone()
 
+def getAuthorId(conn, sid):
+    curs = dbi.cursor(conn)
+    curs.execute('''select uid from works inner join users using (uid)
+                    where sid=%s''', [sid])
+    return curs.fetchone()
+
 def getTags(conn, type):
     curs=dbi.dictCursor(conn)
     curs.execute('select * from tags where ttype=%s',[type])

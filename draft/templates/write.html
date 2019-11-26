@@ -14,7 +14,7 @@
 {% if filename %}
 
 <script>
-    tinymce.get('').setContent()
+    tinymce.get('#tinytext').setContent( {{ story }} )
 </script>
 
 {% endif %}
