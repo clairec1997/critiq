@@ -96,29 +96,34 @@ def getChapter(conn, sid, cnum):
     return curs.fetchone()
 
 def setChapter(conn, sid, cnum, filename):
+    '''Given sid, cnum, filename, sets the chapter'''
     curs = dbi.cursor(conn)
     curs.execute('''insert into chapters(sid, cnum, filename)
                 values (%s, %s, %s)''',
                 [sid, cnum, filename])
 
 def getAuthor(conn, sid):
+    '''given an sid, gets the username'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select username from works inner join users using (uid)
                     where sid=%s''', [sid])
     return curs.fetchone()
 
 def getAuthorId(conn, sid):
+    '''given an sid, gets the uid'''
     curs = dbi.cursor(conn)
     curs.execute('''select uid from works inner join users using (uid)
                     where sid=%s''', [sid])
     return curs.fetchone()
 
 def getTags(conn, type):
+    '''given a tag type, gets tags of that type'''
     curs=dbi.dictCursor(conn)
     curs.execute('select * from tags where ttype=%s',[type])
     return curs.fetchall()
 
 def addStory(conn, uid, title, summary):
+    '''given a uid, title, summary, adds the story'''
     curs = dbi.cursor(conn)
     curs.execute('''insert into works(uid, title, summary)
                     values (%s, %s, %s)''', 
@@ -127,11 +132,13 @@ def addStory(conn, uid, title, summary):
     return curs.fetchone()
 
 def getTagsAjax(conn):
+    '''given a conn, gets all tag names'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select tname from tags''')
     return curs.fetchall()
     
 def addTags(conn, sid, genre, warnings, audience, isFin):
+    '''adds tags to a story'''
     curs = dbi.cursor(conn)
     tagslist = [*genre, *warnings, *audience, *isFin]
     for i in tagslist:
@@ -139,10 +146,12 @@ def addTags(conn, sid, genre, warnings, audience, isFin):
         values (%s, %s)''', [i, sid])
 
 def getStoryTags(conn, sid):
+    '''gets a story's tags'''
     curs = dbi.cursor(conn)
     pass
 
 def addComment(conn, commentText, uid, cid,):
+    '''adds a comment to a chapter'''
     curs = dbi.cursor(conn)
     curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
     curs.execute('select LAST_INSERT_ID()')
