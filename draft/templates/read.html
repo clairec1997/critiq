@@ -2,7 +2,8 @@
 
 {% block content %}
 
-<h5>{{author}}</h5>
+<h1>{{title}}</h1>
+<h5>By {{author}}</h5>
 
 <!-- text here -->
 
@@ -30,6 +31,7 @@
 
 <script>
     $("#commentConfirmation").hide()
+    //will implement Ajax for comments in alpha phase
     // var progressive_on = true;
     // var URL = "{{url_for('addCommentAjax')}}"    
 

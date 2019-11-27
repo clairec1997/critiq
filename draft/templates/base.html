@@ -50,7 +50,7 @@
                   </label>
                   <!-- </fieldset> -->
                   <label id="searchlabel">
-                    Search Works: 
+                    Search For: 
                     <input id="term" name="search_term" value="">
                   </label>
                   <label id="selTag">
@@ -113,7 +113,7 @@ $("span.navbar-toggler-icon").on("click", function (event) {
     $.ajax({
         type: "POST",
         url: URL, 
-        data: JSON.stringify({'tags': {}, 'tagtype':{}}), 
+        data: JSON.stringify({'tags': {}}), 
         contentType: 'application/json; charset=UTF-8',   
         success: get_tags
     });

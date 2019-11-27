@@ -47,7 +47,7 @@ def getTags():
     conn = lookup.getConn(CONN)
     tags = lookup.getTagsAjax(conn)
 
-    return jsonify( {'error': False, 'tags': tags} )
+    return jsonify( {'tags': tags} )
 
 @app.route('/join/', methods=["POST"])
 def join():
@@ -236,6 +236,7 @@ def update(sid, cnum):
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
     chapter = lookup.getChapter(conn, sid, cnum)
+    print(chapter)
     try:
         infile = open(chapter['filename'], 'r')
         story = infile.read()
@@ -243,12 +244,13 @@ def read(sid, cnum):
 
         allch = lookup.getChapters(conn,sid)
         work = lookup.getStory(conn, sid)
+        print(work)
 
         if 'username' not in session:
             return redirect(url_for('index'))
         if session['username'] == work['username']:
             return render_template('read.html', 
-                                title="Hello", 
+                                title=work['title'], 
                                 story=story,
                                 chapter=chapter,
                                 author=work['username'],
@@ -258,15 +260,16 @@ def read(sid, cnum):
                                 allch=allch)
         else:
             return render_template('read.html', 
-                                title="Hello", 
+                                title=work['title'], 
                                 story=story,
-                                author=author['username'],
+                                chapter=chapter,
+                                author=work['username'],
                                 cnum=cnum,
                                 sid=sid,
                                 update=False,
                                 allch=allch)
     except Exception as err:
-        flash('Story not found')
+        print(err)
         return redirect( url_for('index') )
 
 
