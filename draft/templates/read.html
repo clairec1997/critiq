@@ -8,6 +8,12 @@
 
 {{ story|safe }}
 
+<ul>
+    {% for i in allch %}
+        <a href="{{url_for('read', sid=i['sid'], cnum=i['cnum'])}}"><p>Read chapter {{i['cnum']}}</p></a>
+    {% endfor %}
+</ul>
+
 <!-- Need to include a Next Chapter Button -->
 
 <div id="commentForm">

@@ -200,8 +200,9 @@ def update(sid, cnum):
                     infile = open(chapter['filename'], 'r')
                     story = infile.read()
                     infile.close()
+                allch = lookup.getChapters(conn, sid)
                 return render_template('write.html', title='Update Story',
-                                sid=sid, cnum=cnum, story=story)
+                                sid=sid, cnum=cnum, story=story, allch=allch)
 
             if request.method=="POST":
                 ctitle = request.form['title']
@@ -242,6 +243,8 @@ def read(sid, cnum):
     infile = open(chapter['filename'], 'r')
     story = infile.read()
     infile.close()
+
+    allch = lookup.getChapters(conn,sid)
     
     work = lookup.getStory(conn, sid)
 
@@ -254,7 +257,8 @@ def read(sid, cnum):
                             author=work['username'],
                             cnum=cnum,
                             sid=sid,
-                            update=True)
+                            update=True,
+                            allch=allch)
     else:
         return render_template('read.html', 
                             title="Hello", 
@@ -262,7 +266,8 @@ def read(sid, cnum):
                             author=author['username'],
                             cnum=cnum,
                             sid=sid,
-                            update=False)
+                            update=False,
+                            allch=allch)
 
 @app.route('/bookmarks/')
 def bookmarks():

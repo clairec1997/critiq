@@ -2,6 +2,8 @@ import dbi
 
 DSN = None
 
+# We need to add transaction locking eventually
+
 def getConn(db):
     '''returns a database connection to the given database'''
     global DSN
@@ -159,3 +161,12 @@ def addComment(conn, commentText, uid, cid,):
     # print(row)
     rid = row[0]
     curs.execute('''insert into reviewCredits values(%s, %s)''', [rid, cid])
+
+def getChapters(conn, sid):
+    '''given sid, gets all chapters'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select * from chapters 
+                where sid=%s
+                order by cnum asc''',[sid])
+    return curs.fetchall()
+    
