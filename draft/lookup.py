@@ -152,13 +152,12 @@ def getStoryTags(conn, sid):
     curs = dbi.cursor(conn)
     pass
 
-def addComment(conn, commentText, uid, cid,):
+def addComment(conn, commentText, uid, cid):
     '''adds a comment to a chapter'''
     curs = dbi.cursor(conn)
     curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
     curs.execute('select LAST_INSERT_ID()')
     row = curs.fetchone()
-    # print(row)
     rid = row[0]
     curs.execute('''insert into reviewCredits values(%s, %s)''', [rid, cid])
 

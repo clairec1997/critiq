@@ -12,9 +12,7 @@ import bcrypt
 UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
-# CONN = 'sbussey_db'
-# CONN = 'ccannatt_db'
-CONN = 'spulavar_db'
+CONN = 'critiq_db'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -176,7 +174,7 @@ def add():
             status = request.form['isFin']
         
             conn = lookup.getConn(CONN)
-            sid = lookup.addStory(conn, uid, title, summary)
+            sid = lookup.addStory(conn, uid, title, summary)[0]
             lookup.addTags(conn, sid, genre, warnings, audience, status)
 
             return redirect(url_for('update', sid=sid))
@@ -205,7 +203,6 @@ def update(sid, cnum):
                                 sid=sid, cnum=cnum, story=story, allch=allch)
 
             if request.method=="POST":
-                ctitle = request.form['title']
                 sometext = request.form['write']
                 somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
                     tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span'], 
@@ -239,35 +236,39 @@ def update(sid, cnum):
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
     chapter = lookup.getChapter(conn, sid, cnum)
+    try:
+        infile = open(chapter['filename'], 'r')
+        story = infile.read()
+        infile.close()
 
-    infile = open(chapter['filename'], 'r')
-    story = infile.read()
-    infile.close()
+        allch = lookup.getChapters(conn,sid)
+        work = lookup.getStory(conn, sid)
 
-    allch = lookup.getChapters(conn,sid)
-    
-    work = lookup.getStory(conn, sid)
+        if 'username' not in session:
+            return redirect(url_for('index'))
+        if session['username'] == work['username']:
+            return render_template('read.html', 
+                                title="Hello", 
+                                story=story,
+                                chapter=chapter,
+                                author=work['username'],
+                                cnum=cnum,
+                                sid=sid,
+                                update=True,
+                                allch=allch)
+        else:
+            return render_template('read.html', 
+                                title="Hello", 
+                                story=story,
+                                author=author['username'],
+                                cnum=cnum,
+                                sid=sid,
+                                update=False,
+                                allch=allch)
+    except Exception as err:
+        flash('Story not found')
+        return redirect( url_for('index') )
 
-    if 'username' not in session:
-        return redirect(url_for('index'))
-    if session['username'] == work['username']:
-        return render_template('read.html', 
-                            title="Hello", 
-                            story=story,
-                            author=work['username'],
-                            cnum=cnum,
-                            sid=sid,
-                            update=True,
-                            allch=allch)
-    else:
-        return render_template('read.html', 
-                            title="Hello", 
-                            story=story,
-                            author=author['username'],
-                            cnum=cnum,
-                            sid=sid,
-                            update=False,
-                            allch=allch)
 
 @app.route('/bookmarks/')
 def bookmarks():
@@ -288,16 +289,16 @@ def recommendations():
 @app.route('/addComment/', methods=["POST"])
 def addComment():
     conn = lookup.getConn(CONN)
-    commentText = request.form.get("commentText")
+    commentText = request.form["commentText"]
+    cid = request.form['cid']
     # print(commentText)
-    cid = request.form.get('cid')
-    cnum = request.form.get('cnum')
-    sid = request.form.get('sid')
     if 'uid' in session:
         uid = session['uid']
         lookup.addComment(conn, commentText, uid, cid)
         flash('Comment submitted!')
-        return redirect( url_for('read', cnum=cnum, sid=sid))
+        return redirect(request.referrer)
+    else:
+        return redirect(url_for('index'))
 
 @app.route('/addCommentAjax/', methods=["POST"])
 def addCommentAjax():

@@ -21,10 +21,8 @@
         <label>Add a comment on this chapter</label>
             <textarea name="commentText" rows="8" class="form-control"></textarea>
             <br>
+            <input value={{chapter.cid}} id="cid" name="cid" type=hidden>
             <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
-            <input value={{story.cid}} id="cid" name="cid" type=hidden>
-            <input value={{cnum}} id="cnum" name="cnum" type=hidden>
-            <input value={{sid}} id="sid" name="sid" type=hidden>
     </form>
 
     <p id="commentConfirmation">Comment submitted!</p>
