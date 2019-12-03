@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{{title}}</h1>
+<h5>By {{author}}</h5>
+
+<!-- text here -->
+
+{{ story|safe }}
+
+<ul>
+    {% for i in allch %}
+        <a href="{{url_for('read', sid=i['sid'], cnum=i['cnum'])}}"><p>Read chapter {{i['cnum']}}</p></a>
+    {% endfor %}
+</ul>
+
+<!-- Need to include a Next Chapter Button -->
+
+<div id="commentForm">
+    <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
+        <label>Add a comment on this chapter</label>
+            <textarea name="commentText" rows="8" class="form-control"></textarea>
+            <br>
+            <input value={{chapter.cid}} id="cid" name="cid" type=hidden>
+            <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
+    </form>
+
+    <p id="commentConfirmation">Comment submitted!</p>
+</div>
+
+<script>
+    $("#commentConfirmation").hide()
+    //will implement Ajax for comments in alpha phase
+    // var progressive_on = true;
+    // var URL = "{{url_for('addCommentAjax')}}"    
+
+    // $("#commentSubmit").click(function() { 
+    //     console.log('adding comment with Ajax')
+    //     //turn on ajax
+    //     if (progressive_on) {
+    //         $(this).css("font-weight", "bold");
+    //         var commentText = $(this).closest("form").find("textarea").val()
+    //         console.log(commentText)
+    //         var cid = $(this).closest("form").find("#cid").val()
+    //         console.log(cid)
+    //         var cnum = $(this).closest("form").find("#cnum").val()
+    //         console.log(cnum)
+    //         var sid = $(this).closest("form").find("#sid").val()
+    //         console.log(sid)
+    //         var comment = $.post(URL, {'commentText': commentText,
+    //                                    'cid': cid,
+    //                                    'cnum': cnum,
+    //                                    'sid': sid}, showConfirmation)
+    //     }
+    // });
+
+    // function showConfirmation(obj) {
+    //     console.log(obj);
+
+    //     if(obj.error) {
+    //         $("#errors").empty().html('Error: '+obj.err);
+    //         console.log('obj error')
+    //     } else {
+    //         $("#commentConfirmation").show();
+    //     }
+    // }
+
+</script>
+
+<noscript>
+    <p>Your browser doesn't support JavaScript.</p>
+</noscript>
+
+{% endblock %}

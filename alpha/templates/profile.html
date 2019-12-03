@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{username}}'s Profile</h1>
+
+<p>Date of Birth: {{dob}}</p>
+<p>Joined on: {{joined}}</p>
+<p></p>
+
+<div class="prefs">
+    <a href="{{url_for('prefs', uid=uid)}}"> 
+        <button>My Preferences</button>    
+    </a>
+</div>
+
+
+{% endblock %}

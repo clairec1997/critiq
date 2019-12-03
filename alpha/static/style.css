@@ -1,0 +1,29 @@
+/* For flashed messages; make them stand out using red and italics */
+
+#messages {
+    color: red;
+    font-style: italic;
+}
+
+h1 {
+    font-size: 200%;
+    color: teal;
+}
+
+.row {
+    padding-top: 5%;
+}
+
+.unselectable {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+#selTag {
+    display: none;
+}
+.search_term {
+    visibility: visible;
+}

@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Claire Cannatti and Sophia Bussey and Svetha Pulavarty">
+    <meta name="description" content="A site for posting and critiquing creative writing.">
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';" > -->
+
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{url_for('static', filename = 'style.css')}}">
+    <link rel="icon" href="images/icon.jpg">
+    <title>{{page_title}}</title>
+    {% block head_stuff %} {% endblock %}
+</head>
+<body>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <a class="navbar-brand" href="#" > </a>
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+    
+          <div class="collapse navbar-collapse" id="navbarSupportedContent"> 
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="{{url_for('index')}}">critiq<span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item">
+                <form method="POST" action="{{url_for('index')}}">
+		              <!-- <fieldset> -->
+                  <label>
+                      <input required type="radio" name="search_kind" value="work">
+                      By Title
+                  </label>
+                  <label>
+                      <input required type="radio" name="search_kind" value="author">
+                      By Author
+                  </label>
+                  <label>
+                    <input required type="radio" name="search_kind" value="tag">
+                    By Tag
+                  </label>
+                  <!-- </fieldset> -->
+                  <label id="searchlabel">
+                    Search For: 
+                    <input id="term" name="search_term" value="">
+                  </label>
+                  <label id="selTag">
+                    Select Desired Tag: 
+                    <select id="select_tag" name="select_tag">
+                      <option value="">Select a Tag</option>
+                    </select>
+                  </label>
+                  <input type="submit" name="submit-btn" value="Search">
+                </form>
+              </li>
+              {% if 'uid' in session %}
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Profile</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                      
+                      <a class="dropdown-item" href="{{url_for('profile', uid=session['uid'])}}">My Profile</a>
+                      <a class="dropdown-item" href="{{url_for('manage')}}">Manage My Stories</a>
+                      <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
+                      <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>
+                      <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
+                      
+                    </div>
+                  </li>
+                {% endif %}
+            </ul>
+          </div>
+    
+        </nav>
+<!-- >>>>>>> 16cc9ff9edeb0d92834985b7e8eff2a1863156ba -->
+{% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div id="messages">
+        {% for msg in messages %}
+            <p>{{msg}}</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+        
+<div class="row">
+  <div class="col-xl-2 col-lg-2 col-md-1 col-sm-1 col-xs-1"></div>
+
+  <div class="col-xl-8 col-lg-8 col-md-10 col-sm-10 col-xs-10">
+    {% block content %}
+    <h1>Welcome!</h1>
+    {% endblock %}
+    
+
+  </div>
+
+  <div class="col-xl-2 col-lg-2 col-md-1 col-sm-1 col-xs-1"></div>
+</div>
+
+
+<script>
+
+var URL = "{{url_for('getTags')}}"
+$("span.navbar-toggler-icon").on("click", function (event) {
+    $.ajax({
+        type: "POST",
+        url: URL, 
+        data: JSON.stringify({'tags': {}}), 
+        contentType: 'application/json; charset=UTF-8',   
+        success: get_tags
+    });
+
+  //for later versions
+  // if ($("#select_tag option").length <= 1) {
+  //   console.log($("#select_tag option").length)
+  //   $.post(URL, {'tags': {}}, get_tags)
+  // }
+});
+
+function get_tags(obj) {
+  var tags = Object.values(obj['tags']);
+  for (var tag of tags) {
+        $("select#select_tag").append(new Option(tag['tname'], tag['tname']));
+  }
+}
+
+$("input[value='tag']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#searchlabel").hide()
+        $(this).closest("form")
+               .find("label#selTag").show()  
+})
+$("input[value='work']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#selTag").hide()
+        $(this).closest("form")
+               .find("label#searchlabel").show()         
+})
+$("input[value='author']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#selTag").hide()
+        $(this).closest("form")
+               .find("label#searchlabel").show()         
+})
+</script>
+</body>
+</html>
+
+
+
