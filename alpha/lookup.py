@@ -63,6 +63,36 @@ def searchWorks(conn, kind, searchterm):
         
     return curs.fetchall()
 
+
+def searchWorks(conn, kind, searchterm, filters):
+    '''finds works with title including searchterm or tag = searchterm'''
+    curs = dbi.dictCursor(conn)
+    if kind == "work":
+        curs.execute('''select * from 
+                        (select sid, uid, title, updated, 
+                        summary, stars, count(sid) from
+                        ((select * from (select tid, sid from taglink
+                        where tid not in %s ) as q1
+                        left outer join works using(sid)) as q2
+                        where title like %s) as q3
+                        left outer join chapters using(sid) group by sid) 
+                        as q4 left outer join 
+                        (select uid, username from users) as q5 using(uid)''', 
+                        [filters, '%' + searchterm + '%'])
+    else:
+        curs.execute('''select * from (select sid, uid, title, updated, 
+                        summary, stars, count(sid) from 
+                        (select tid from tags where tname = %s) as q1 
+                        left outer join (select tid, sid from taglink) as q2
+                        using(tid) 
+                        left outer join works using(sid)
+                        left outer join chapters using(sid) group by sid) as q3
+                        left outer join (select uid, username from users) as q4
+                        using(uid)''', [searchterm])
+        
+    return curs.fetchall()
+
+
 def searchAuthors(conn, author):
     '''finds authorsmathing name'''
     curs = dbi.dictCursor(conn)

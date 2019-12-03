@@ -44,4 +44,15 @@
 
 </div>
 
+<div id="filters">
+    <h2>Don't Show Me Works Involving:</h2>
+    <form id="filter-frm" method="POST" action="{{request.url}}">
+        {% for warning in warnings %}
+        <br>
+        <input type="checkbox" name="warnings[]" value="{{warning['tid']}}"> {{warning['tname']}}</input>
+        {% endfor %}
+        <input type="submit" name="submit-btn" value="Exclude">
+    </form>
+</div>
+
 {%endblock%}

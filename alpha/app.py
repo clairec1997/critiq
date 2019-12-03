@@ -142,7 +142,6 @@ def profile(uid):
 def prefs(uid):
     try:
         if 'uid' in session:
-
             uid = session['uid']
             conn = lookup.getConn(CONN)
             prefs = lookup.getPrefs(conn, uid)
@@ -381,18 +380,23 @@ def worksByTerm(search_kind, search_term):
     kind = search_kind
     conn = lookup.getConn(CONN)
 
+    warnings = tuple([tag['tid'] for tag in 
+                    lookup.getTags(conn, 'warnings')])
+
     #search for works like the search term
-    #if no search term, defaults to all movies 
+    #if no search term, defaults to all movies
+    # if request.form.getlist('warnings[]'):
+
     
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term))
-
+    print (res)
     resKind = "Authors" if kind == "author" else "Works"
     nm = "Tag" if (kind == "tag") else "Term"
     if not res:
         flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
     #return "<p>{}</p>".format(res)
-    return render_template('search.html', resKind=resKind, term=term, res=res)
+    return render_template('search.html', resKind=resKind, term=term, res=res, warnings=warnings)
 
 if __name__ == '__main__':
 
