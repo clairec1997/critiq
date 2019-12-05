@@ -264,7 +264,7 @@ def update(sid, cnum):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    print("sid: "+str(sid))
+    # print("sid: "+str(sid))
     # print("cnum: "+str(cnum))
     chapter = lookup.getChapter(conn, sid, cnum)
     # print('Chapter dict:')
