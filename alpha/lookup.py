@@ -42,7 +42,7 @@ def searchWorks(conn, kind, searchterm):
     '''finds works with title including searchterm or tag = searchterm'''
     curs = dbi.dictCursor(conn)
     if kind == "work":
-        curs.execute(''' select * from 
+        curs.execute('''select * from 
                         (select sid, uid, title, updated, 
                         summary, stars, count(sid) from
                                 (select * from works where title like %s) 
@@ -186,6 +186,8 @@ def getStoryTags(conn, sid):
 def addComment(conn, commentText, uid, cid):
     '''adds a comment to a chapter'''
     curs = dbi.cursor(conn)
+    # print(uid)
+    # print(cid)
     curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
     curs.execute('select LAST_INSERT_ID()')
     row = curs.fetchone()
@@ -217,9 +219,9 @@ def updatePrefs(conn, uid, prefs):
                     [uid, pref])
     # return getPrefs(conn, uid)
 
-    def getComments(conn, uid, cid):
-        curs = dbi.dictCursor(conn)
-        curs.execute('''select reviewText from reviews inner join reviewCredit
-                        where commenter=%s and cid=%s
-                        ''', [uid, chid])
-        return curs.fetchall()
+def getComments(conn, uid, cid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select reviewText from reviews inner join reviewCredits using(rid)
+                    where commenter=%s and cid=%s
+                    ''', [uid, cid])
+    return curs.fetchall()

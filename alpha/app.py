@@ -265,47 +265,49 @@ def update(sid, cnum):
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
     print("sid: "+str(sid))
-    print("cnum: "+str(cnum))
+    # print("cnum: "+str(cnum))
     chapter = lookup.getChapter(conn, sid, cnum)
-    print('Chapter dict:')
-    print(chapter)
+    # print('Chapter dict:')
+    # print(chapter)
     cid = chapter['cid']
-
+    print(cid)
     try:
         uid = session['uid']
         comments = lookup.getComments(conn, uid, cid)
+        print('Comments:')
+        print(comments)
         infile = open(chapter['filename'], 'r')
         story = infile.read()
         infile.close()
 
         allch = lookup.getChapters(conn,sid)
         work = lookup.getStory(conn, sid)
-        print(work)
+        # print(work)
 
         if 'username' not in session:
             return redirect(url_for('index'))
         if session['username'] == work['username']:
             return render_template('read.html', 
-                                title=work['title'], 
-                                story=story,
-                                chapter=chapter,
-                                author=work['username'],
-                                cnum=cnum,
-                                sid=sid,
-                                update=True,
-                                allch=allch,
-                                comments=comments)
+                                    title=work['title'], 
+                                    story=story,
+                                    chapter=chapter,
+                                    author=work['username'],
+                                    cnum=cnum,
+                                    sid=sid,
+                                    update=True,
+                                    allch=allch,
+                                    comments=comments)
         else:
             return render_template('read.html', 
-                                title=work['title'], 
-                                story=story,
-                                chapter=chapter,
-                                author=work['username'],
-                                cnum=cnum,
-                                sid=sid,
-                                update=False,
-                                allch=allch,
-                                comments=comments)
+                                    title=work['title'], 
+                                    story=story,
+                                    chapter=chapter,
+                                    author=work['username'],
+                                    cnum=cnum,
+                                    sid=sid,
+                                    update=False,
+                                    allch=allch,
+                                    comments=comments)
     except Exception as err:
         print(err)
         return redirect( url_for('index') )
@@ -341,30 +343,30 @@ def addComment():
     else:
         return redirect(url_for('index'))
 
-@app.route('/addCommentAjax/', methods=["POST"])
-def addCommentAjax():
-    conn = lookup.getConn(CONN)
-    commentText = request.form.get("commentText")
-    print(commentText)
-    cid = request.form.get('cid')
-    cnum = request.form.get('cnum')
-    sid = request.form.get('sid')
-    try:
-        if 'uid' in session:
-            uid = session['uid']
-            lookup.addComment(conn, commentText, uid, cid)
-            flash('Comment submitted!')
-            return jsonify(error=False,
-                            commentText=commentText,
-                            uid=uid,
-                            cid=cid
-                            )
-        else:
-            flash("Log in before commenting.")
-            return redirect(url_for('index'))
-    except Exception as err:
-        print(err)
-        return jsonify( {'error': True, 'err': str(err) } )
+# @app.route('/addCommentAjax/', methods=["POST"])
+# def addCommentAjax():
+#     conn = lookup.getConn(CONN)
+#     commentText = request.form.get("commentText")
+#     print(commentText)
+#     cid = request.form.get('cid')
+#     cnum = request.form.get('cnum')
+#     sid = request.form.get('sid')
+#     try:
+#         if 'uid' in session:
+#             uid = session['uid']
+#             lookup.addComment(conn, commentText, uid, cid)
+#             flash('Comment submitted!')
+#             return jsonify(error=False,
+#                             commentText=commentText,
+#                             uid=uid,
+#                             cid=cid
+#                             )
+#         else:
+#             flash("Log in before commenting.")
+#             return redirect(url_for('index'))
+#     except Exception as err:
+#         print(err)
+#         return jsonify( {'error': True, 'err': str(err) } )
 
 @app.route('/logout/')
 def logout():

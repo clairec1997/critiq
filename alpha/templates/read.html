@@ -19,10 +19,12 @@
 
 <div id=existingComments>
     <h5>Comments you've left on this chapter before:</h5>
+    <br><br>
     {% for comment in comments %}
         <div class=comment>
-            <p>{{ comment }}</p>
+            <p>{{ comment.reviewText }}</p>
         </div>
+        <br><br>
     {% endfor %}
 </div>
 <div id="commentForm">
@@ -39,40 +41,6 @@
 
 <script>
     $("#commentConfirmation").hide()
-    //will implement Ajax for comments in alpha phase
-    // var progressive_on = true;
-    // var URL = "{{url_for('addCommentAjax')}}"    
-
-    // $("#commentSubmit").click(function() { 
-    //     console.log('adding comment with Ajax')
-    //     //turn on ajax
-    //     if (progressive_on) {
-    //         $(this).css("font-weight", "bold");
-    //         var commentText = $(this).closest("form").find("textarea").val()
-    //         console.log(commentText)
-    //         var cid = $(this).closest("form").find("#cid").val()
-    //         console.log(cid)
-    //         var cnum = $(this).closest("form").find("#cnum").val()
-    //         console.log(cnum)
-    //         var sid = $(this).closest("form").find("#sid").val()
-    //         console.log(sid)
-    //         var comment = $.post(URL, {'commentText': commentText,
-    //                                    'cid': cid,
-    //                                    'cnum': cnum,
-    //                                    'sid': sid}, showConfirmation)
-    //     }
-    // });
-
-    // function showConfirmation(obj) {
-    //     console.log(obj);
-
-    //     if(obj.error) {
-    //         $("#errors").empty().html('Error: '+obj.err);
-    //         console.log('obj error')
-    //     } else {
-    //         $("#commentConfirmation").show();
-    //     }
-    // }
 
 </script>
 
