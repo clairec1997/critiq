@@ -17,6 +17,14 @@
 
 <!-- Need to include a Next Chapter Button -->
 
+<div id=existingComments>
+    <h5>Comments you've left on this chapter before:</h5>
+    {% for comment in comments %}
+        <div class=comment>
+            <p>{{ comment }}</p>
+        </div>
+    {% endfor %}
+</div>
 <div id="commentForm">
     <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
         <label>Add a comment on this chapter</label>

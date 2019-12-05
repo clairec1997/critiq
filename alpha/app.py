@@ -13,6 +13,7 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 CONN = 'critiq_db'
+# CONN = 'ccannatt_db'
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -263,9 +264,16 @@ def update(sid, cnum):
 @app.route('/read/<int:sid>/<int:cnum>/')
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
+    print("sid: "+str(sid))
+    print("cnum: "+str(cnum))
     chapter = lookup.getChapter(conn, sid, cnum)
+    print('Chapter dict:')
     print(chapter)
+    cid = chapter['cid']
+
     try:
+        uid = session['uid']
+        comments = lookup.getComments(conn, uid, cid)
         infile = open(chapter['filename'], 'r')
         story = infile.read()
         infile.close()
@@ -285,7 +293,8 @@ def read(sid, cnum):
                                 cnum=cnum,
                                 sid=sid,
                                 update=True,
-                                allch=allch)
+                                allch=allch,
+                                comments=comments)
         else:
             return render_template('read.html', 
                                 title=work['title'], 
@@ -295,7 +304,8 @@ def read(sid, cnum):
                                 cnum=cnum,
                                 sid=sid,
                                 update=False,
-                                allch=allch)
+                                allch=allch,
+                                comments=comments)
     except Exception as err:
         print(err)
         return redirect( url_for('index') )
@@ -384,7 +394,7 @@ def worksByTerm(search_kind, search_term):
                     lookup.getTags(conn, 'warnings')])
 
     #search for works like the search term
-    #if no search term, defaults to all movies
+    # if no search term, defaults to all movies
     # if request.form.getlist('warnings[]'):
 
     
