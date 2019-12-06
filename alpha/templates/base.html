@@ -109,7 +109,8 @@
 <script>
 
 var URL = "{{url_for('getTags')}}"
-$("span.navbar-toggler-icon").on("click", function (event) {
+$("input[value='tag']").on("click", function (event) {
+    console.log("pls");
     $.ajax({
         type: "POST",
         url: URL, 
