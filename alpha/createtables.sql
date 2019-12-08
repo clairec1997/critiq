@@ -23,6 +23,7 @@ create table works (
     updated date,
     summary varchar(2000),
     stars float,
+    wip boolean,
     index(uid),
     foreign key (uid) references users(uid)
         on UPDATE cascade
