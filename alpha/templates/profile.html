@@ -3,10 +3,18 @@
 {% block content %}
 
 <h1>{{username}}'s Profile</h1>
-
-<p>Date of Birth: {{dob}}</p>
+{% if chapter.wip %}
+<form id="profileForm" method = "POST" action="{{url_for('updateProfile')}}">  
+    <label class="dob">Date of Birth:  
+        <input type="text" value={{dob}} name="dob"> </label>
+    <label class="rating"> Joined on:  
+        <input type="text" value={{joined}} name="joined"> </label>
+    <input type="submit" value="Update Profile">
+</form>
+{% endif %}
+<!-- <p>Date of Birth: {{dob}}</p>
 <p>Joined on: {{joined}}</p>
-<p></p>
+<p></p> -->
 
 <div class="prefs">
     <a href="{{url_for('prefs', uid=uid)}}"> 

@@ -43,10 +43,10 @@ def searchWorks(conn, kind, searchterm):
     curs = dbi.dictCursor(conn)
     if kind == "work":
         curs.execute('''select * from 
-                        (select sid, uid, title, updated, 
-                        summary, stars, count(sid) from
+                            (select sid, uid, title, updated, 
+                            summary, stars, count(sid) from
                                 (select * from works where title like %s) 
-                        as q1 left outer join chapters using(sid) group by sid) 
+                            as q1 left outer join chapters using(sid) group by sid) 
                         as q2 left outer join 
                         (select uid, username from users) as q3 using(uid)''', 
                         ['%' + searchterm + '%'])
@@ -64,21 +64,28 @@ def searchWorks(conn, kind, searchterm):
     return curs.fetchall()
 
 
-# def searchWorks(conn, kind, searchterm, filters):
+# def searchWorks(conn, kind, searchterm, filters=None):
 #     '''finds works with title including searchterm or tag = searchterm'''
 #     curs = dbi.dictCursor(conn)
+#     print (kind)
 #     if kind == "work":
-#         curs.execute('''select * from 
+#         print (filters)
+#         if filters:
+#             print (filters)
+#             curs.execute('''select * from 
+#                         (select sid from taglink where tid not in %s group by sid) as q1
+#                         left outer join works using (sid)
+#                         where title like %s''', 
+#                         [filters, '%' + searchterm + '%'])
+#         else:
+#             curs.execute('''select * from 
 #                         (select sid, uid, title, updated, 
 #                         summary, stars, count(sid) from
-#                         ((select * from (select tid, sid from taglink
-#                         where tid not in %s ) as q1
-#                         left outer join works using(sid)) as q2
-#                         where title like %s) as q3
-#                         left outer join chapters using(sid) group by sid) 
-#                         as q4 left outer join 
-#                         (select uid, username from users) as q5 using(uid)''', 
-#                         [filters, '%' + searchterm + '%'])
+#                         (select * from works where title like %s) 
+#                         as q1 left outer join chapters using(sid) group by sid) 
+#                         as q2 left outer join 
+#                         (select uid, username from users) as q3 using(uid)''', 
+#                         ['%' + searchterm + '%'])
 #     else:
 #         curs.execute('''select * from (select sid, uid, title, updated, 
 #                         summary, stars, count(sid) from 
@@ -155,12 +162,12 @@ def getTags(conn, type):
     curs.execute('select * from tags where ttype=%s',[type])
     return curs.fetchall()
 
-def addStory(conn, uid, title, summary):
+def addStory(conn, uid, title, summary, isFin):
     '''given a uid, title, summary, adds the story'''
     curs = dbi.cursor(conn)
-    curs.execute('''insert into works(uid, title, summary)
-                    values (%s, %s, %s)''', 
-                    [uid, title, summary])
+    curs.execute('''insert into works(uid, title, summary, wip)
+                    values (%s, %s, %s, %s)''', 
+                    [uid, title, summary, isFin])
     curs.execute('select last_insert_id()')
     return curs.fetchone()
 
@@ -218,6 +225,24 @@ def updatePrefs(conn, uid, prefs):
         curs.execute('''insert into prefs values(%s, %s)''',
                     [uid, pref])
     # return getPrefs(conn, uid)
+
+def getRecs(conn, uid):
+    curs = dbi.dictCursor(conn)
+    tags = tuple([tag['tid'] for tag in getPrefs(conn, uid)])
+    print (tags)
+    curs.execute('''select sid, uid, title, updated, summary, 
+                stars, count(sid), username from 
+                (select sid from taglink where tid in %s group by sid)
+                as q1 left outer join works using(sid) 
+                left outer join (select uid, username from users) as q2 
+                using (uid) 
+                left outer join chapters using(sid) group by sid
+                order by stars desc''', 
+                [tags])
+                
+    res = curs.fetchall()
+    print (res)
+    return res
 
 def getComments(conn, uid, cid):
     curs = dbi.dictCursor(conn)

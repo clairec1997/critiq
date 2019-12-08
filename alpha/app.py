@@ -57,7 +57,10 @@ def join():
         passwd1 = request.form['password1']
         passwd2 = request.form['password2']
         if passwd1 != passwd2:
-            flash('passwords do not match')
+            flash('Passwords do not match')
+            return redirect( url_for('index'))
+        if len(passwd1) < 12:
+            flash('Passwords must be at least 12 characters long')
             return redirect( url_for('index'))
         hashed = bcrypt.hashpw(passwd1.encode('utf-8'), bcrypt.gensalt())
         hashed_str = hashed.decode('utf-8')
@@ -77,7 +80,7 @@ def join():
         # session['visits'] = 1
         return redirect( url_for('profile', uid=uid) ) #should put username in instead? more readable
     except Exception as err:
-        flash('form submission error '+str(err))
+        flash('Form submission error '+str(err))
         return redirect( url_for('index') )
 
 @app.route('/login/', methods=["POST"])
@@ -90,7 +93,7 @@ def login():
         if row is None:
             # Same response as wrong password,
             # so no information about what went wrong
-            flash('login incorrect. Try again or join')
+            flash('Login incorrect. Try again or join')
             return redirect( url_for('index'))
         hashed = row['passhash'] 
         
@@ -98,18 +101,18 @@ def login():
         hashed2_str = hashed2.decode('utf-8')
         
         if hashed2_str == hashed:
-            flash('successfully logged in as '+username)
+            flash('Successfully logged in as '+username)
             session['username'] = username
             session['uid'] = row['uid']
             print(session['uid'])
             session['logged_in'] = True
             # session['visits'] = 1
-            return redirect( url_for('profile', uid=session['uid']) )
+            return redirect( url_for('profile') )
         else:
-            flash('login incorrect. Try again or join')
+            flash('Login incorrect. Try again or join')
             return redirect( url_for('index'))
     except Exception as err:
-        flash('form submission error: '+str(err))
+        flash('Form submission error: '+str(err))
         return redirect( url_for('index') )
 
 
@@ -125,7 +128,7 @@ def profile(uid):
         # don't trust the URL; it's only there for decoration
         if 'username' in session:
             username = session['username']
-            # uid = session['uid']
+            uid = session['uid']
             # session['visits'] = 1+int(session['visits'])
             return render_template('profile.html',
                                     page_title="{}'s Profile".format(username),
@@ -133,10 +136,10 @@ def profile(uid):
                                     )
 
         else:
-            flash('you are not logged in. Please login or join')
+            flash('You are not logged in. Please login or join')
             return redirect( url_for('index') )
     except Exception as err:
-        flash('some kind of error '+str(err))
+        flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
 @app.route('/prefs/<uid>', methods=["GET"])
@@ -157,7 +160,7 @@ def prefs(uid):
             flash("Please log in or join")
             return redirect(url_for('index'))
     except Exception as err:
-        flash('error: '+str(err))
+        flash('Error: '+str(err))
         return redirect(url_for('index'))
 
 
@@ -173,7 +176,7 @@ def manage():
             flash("Please log in or join")
             return redirect(url_for('index'))
     except Exception as err:
-        flash('error: '+str(err))
+        flash('Error: '+str(err))
         return redirect( url_for('index') )
     
 @app.route('/add/', methods=["GET", "POST"])
@@ -203,12 +206,12 @@ def add():
             status = request.form['isFin']
         
             conn = lookup.getConn(CONN)
-            sid = lookup.addStory(conn, uid, title, summary)[0]
+            sid = lookup.addStory(conn, uid, title, summary, status)[0]
             lookup.addTags(conn, sid, genre, warnings, audience, status)
 
             return redirect(url_for('update', sid=sid))
     except Exception as err:
-        flash('error: '+str(err))
+        flash('Error: '+str(err))
         return redirect( url_for('index') )
 
 @app.route('/update/<int:sid>/', defaults={'cnum':1}, methods=["GET","POST"])
@@ -257,7 +260,7 @@ def update(sid, cnum):
                     Please log in with the account associated with this work''')
             return redirect(url_for('index'))
     except Exception as err:
-        flash('some kind of error '+str(err))
+        flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
 @app.route('/read/<int:sid>', defaults={'cnum': 1})
@@ -317,17 +320,23 @@ def read(sid, cnum):
 def bookmarks():
     return render_template('main.html',title='Hello')
 
-@app.route('/recommendations/')
+@app.route('/recommendations/', methods=["GET", "POST"])
 def recommendations():
-    recommendation = [
-                        {'title': '', 
-                            'sid': 0,
-                            'summary': '',
-                            'tags': [],
-                            'rating': 0}
-                       ]    
-    return render_template('recommendations.html',
-                            recommendations=recommendation)
+    if 'uid' in session:
+        if request.method=="POST":
+            filters = tuple(request.form.getlist('warnings[]'))
+            print (filters)
+            
+        else:
+            uid = session['uid']
+            conn = lookup.getConn(CONN)
+            warnings = lookup.getTags(conn, 'warnings')
+
+            recs = lookup.getRecs(conn, uid)
+            return render_template('search.html',
+                                    resKind="Recs", res = recs, warnings=warnings)
+    else:
+        return redirect(url_for('index'))
 
 @app.route('/addComment/', methods=["POST"])
 def addComment():
@@ -379,36 +388,36 @@ def logout():
             flash('You are logged out')
             return redirect(url_for('index'))
         else:
-            flash('you are not logged in. Please login or join')
+            flash('You are not logged in. Please login or join')
             return redirect( url_for('index') )
     except Exception as err:
-        flash('some kind of error '+str(err))
+        flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
 @app.route('/search/<search_kind>', defaults={'search_term': ""})
-@app.route('/search/<search_kind>/<search_term>', methods=["GET"])
+@app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
     kind = search_kind
     conn = lookup.getConn(CONN)
-
-    warnings = tuple([tag['tid'] for tag in 
-                    lookup.getTags(conn, 'warnings')])
-
+    # if request.method == "POST":
+    #     filters = tuple(request.form.getlist('warnings[]'))
+    #     res = lookup.searchWorks(conn, kind, term, filters)
     #search for works like the search term
     # if no search term, defaults to all movies
     # if request.form.getlist('warnings[]'):
 
-    
+    # else:
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term))
-    print (res)
+
     resKind = "Authors" if kind == "author" else "Works"
     nm = "Tag" if (kind == "tag") else "Term"
     if not res:
         flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
     #return "<p>{}</p>".format(res)
-    return render_template('search.html', resKind=resKind, term=term, res=res, warnings=warnings)
+    return render_template('search.html', resKind=resKind, term=term, 
+                            res=res, warnings=lookup.getTags(conn, 'warnings'))
 
 if __name__ == '__main__':
 
