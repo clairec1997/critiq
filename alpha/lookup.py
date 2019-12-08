@@ -119,6 +119,7 @@ def getChapter(conn, sid, cnum):
     '''returns a chapter of a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select works.title as title,
+                    works.wip as wip,
                     works.summary as summary, 
                     works.title as title, 
                     chapters.filename as filename,

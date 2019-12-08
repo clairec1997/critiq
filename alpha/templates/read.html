@@ -34,11 +34,65 @@
             <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
     </form>
 
+    {% if chapter.wip %}
+    <tr>
+        <form id="rateForm" method = "POST" action="{{url_for('rateMovie')}}">  
+            <input value={{sid}} name="tt" type=hidden>
+        <td>
+            <label class="rating"> &#9734 
+                <input type="radio" value=1 name="rating"> </label>
+            <label class="rating"> &#9734 
+                <input type="radio" value=2 name="rating"> </label>
+            <label class="rating"> &#9734 
+                <input type="radio" value=3 name="rating"> </label>
+            <label class="rating"> &#9734 
+                <input type="radio" value=4 name="rating">  </label>
+            <label class="rating"> &#9734 
+                <input type="radio" value=5 name="rating"> </label>
+            <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
+        </td>
+
+        <td id="avgCol">{{movie.avgRating}}</td>
+        </form>
+    </tr>
+    {% endif %}
+
+
     <p id="commentConfirmation">Comment submitted!</p>
 </div>
 
 <script>
     $("#commentConfirmation").hide()
+    //will implement Ajax for comments in alpha phase
+    var progressive_on = true;
+    // var URL = "{{url_for('rateAjax')}}"    
+
+    $("#rateForm").click(function() { 
+        console.log('adding comment with Ajax')
+        //turn on ajax
+        if (progressive_on) {
+            rate = $(this).val()
+            for (i = 0; i < rate, i++) {
+                if ($(this).closest("td").find("input").val() == i) {
+                    $(this).closest("td").find("label").text(" &#9733");
+                }
+            }
+            
+            // var commentText = $(this).closest("form").find("textarea").val()
+            // console.log(commentText)
+            // var cid = $(this).closest("form").find("#cid").val()
+            // console.log(cid)
+            // var cnum = $(this).closest("form").find("#cnum").val()
+            // console.log(cnum)
+            // var sid = $(this).closest("form").find("#sid").val()
+            // console.log(sid)
+            // var comment = $.post(URL, {'commentText': commentText,
+            //                            'cid': cid,
+            //                            'cnum': cnum,
+            //                            'sid': sid}, showConfirmation)
+        }
+    });
+
 
 </script>
 
