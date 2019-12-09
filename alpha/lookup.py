@@ -261,3 +261,21 @@ def getComments(conn, uid, cid):
                     where commenter=%s and cid=%s
                     ''', [uid, cid])
     return curs.fetchall()
+
+def calcAvgRating(conn, sid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select avg(isHelpful) from reviews
+                        inner join reviewCredits using(cid)
+                        inner join works using(sid)
+                        where sid=%s''', [sid])
+    return curs.fetchone()
+
+def updateAvgRating(conn, sid, avg):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''update works set avgRating=%s 
+                    where sid=%s''', [avg, sid])
+
+def addRating(conn, sid, rating):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''update reviews set rating=%s 
+                    where sid=%s''', [rating, sid])

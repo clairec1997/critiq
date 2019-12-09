@@ -24,6 +24,7 @@ create table works (
     summary varchar(2000),
     stars float,
     wip boolean,
+    avgRating decimal(10),
     index(uid),
     foreign key (uid) references users(uid)
         on UPDATE cascade

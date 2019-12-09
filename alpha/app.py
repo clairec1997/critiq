@@ -403,7 +403,15 @@ def addComment():
 
 @app.route('/rateAjax/', methods=["POST"])
 def rateAjax():
-    pass
+    conn = lookup.getConn(CONN)
+    rating = request.form.get('rating')
+    sid = request.form.get('sid')
+    print(rating)
+    lookup.addRating(conn, sid, rating)
+    avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
+    lookup.updateAvgRating(conn, sid, avgRating)
+    return jsonify(rating=rating, avgRating=avgRating)
+    
 
 @app.route('/logout/')
 def logout():

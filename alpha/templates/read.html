@@ -36,8 +36,8 @@
 
     {% if chapter.wip %}
     <tr>
-        <form id="rateForm" method = "POST" action="{{url_for('rateMovie')}}">  
-            <input value={{sid}} name="tt" type=hidden>
+        <form id="rateForm" method = "POST" action="{{url_for('rateAjax')}}">  
+            <input value={{sid}} name="sid" type=hidden>
         <td>
             <label class="rating"> &#9734 
                 <input type="radio" value=1 name="rating"> </label>
@@ -52,35 +52,13 @@
             <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
         </td>
 
-        <td id="avgCol">{{movie.avgRating}}</td>
+        <td id="avgCol">Average rating: {{ story.avgRating}}/5</td>
         </form>
     </tr>
     {% endif %}
 
 
     <p id="commentConfirmation">Comment submitted!</p>
-    {% if chapter.wip %}
-    <tr>
-        <form id="rateForm" method = "POST" action="{{url_for('rateMovie')}}">  
-            <input value={{sid}} name="tt" type=hidden>
-        <td>
-            <label class="rating"> &#9734 
-                <input type="radio" value=1 name="rating"> </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=2 name="rating"> </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=3 name="rating"> </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=4 name="rating">  </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=5 name="rating"> </label>
-            <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
-        </td>
-
-        <td id="avgCol">{{movie.avgRating}}</td>
-        </form>
-    </tr>
-    {% endif %}
 
 </div>
 
