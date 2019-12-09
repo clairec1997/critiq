@@ -3,24 +3,29 @@
 {% block content %}
 
 <h1>{{username}}'s Profile</h1>
-{% if chapter.wip %}
-<form id="profileForm" method = "POST" action="{{url_for('updateProfile')}}">  
-    <label class="dob">Date of Birth:  
-        <input type="text" value={{dob}} name="dob"> </label>
-    <label class="rating"> Joined on:  
-        <input type="text" value={{joined}} name="joined"> </label>
-    <input type="submit" value="Update Profile">
-</form>
-{% endif %}
-<!-- <p>Date of Birth: {{dob}}</p>
-<p>Joined on: {{joined}}</p>
-<p></p> -->
 
+
+<h4>Help us find stories that you will enjoy!</h4> 
+
+<form id="prefs" method="POST" action="{{url_for('profile', uid=uid)}}">
+<label id="tags">I Like Stories About...
+    {% for tag in prefs %}
+    <br>
+    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked> {{tag['tname']}}</input>
+    {% endfor %}
+    {% for tag in allTags %}
+    <br>
+    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" > {{tag['tname']}}</input>
+    {% endfor %}
+</label>
+<input type="submit" name="submit-btn" value="Submit Changes">
+</form>
+<!-- 
 <div class="prefs">
     <a href="{{url_for('prefs', uid=uid)}}"> 
         <button>My Preferences</button>    
     </a>
-</div>
+</div> -->
 
 
 {% endblock %}

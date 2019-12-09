@@ -104,10 +104,11 @@ def login():
             flash('Successfully logged in as '+username)
             session['username'] = username
             session['uid'] = row['uid']
+            uid=session['uid']
             print(session['uid'])
             session['logged_in'] = True
             # session['visits'] = 1
-            return redirect( url_for('profile') )
+            return redirect( url_for('profile', uid=uid) )
         else:
             flash('Login incorrect. Try again or join')
             return redirect( url_for('index'))
@@ -118,29 +119,52 @@ def login():
 
 @app.route('/profile/<uid>', methods = ["GET", "POST"]) #allow everyone to access all profiles, but only if logged in can change data
 def profile(uid):
-    try:
-        if request.method == "POST":
-            if 'uid' in session:
-                uid = session['uid']
-                conn = lookup.getConn(CONN)
-                lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'))      
-        
-        # don't trust the URL; it's only there for decoration
-        if 'username' in session:
-            username = session['username']
+    conn = lookup.getConn(CONN)
+    # try:
+    if request.method == "POST":
+        if 'uid' in session:
             uid = session['uid']
-            # session['visits'] = 1+int(session['visits'])
+            conn = lookup.getConn(CONN)
+            lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'))      
+    
+    # don't trust the URL; it's only there for decoration
+    if 'username' in session:
+        print('\n\n')
+        username = session['username']
+        uid = session['uid']
+        prefs = lookup.getPrefs(conn, uid)
+        tids = [tag['tid'] for tag in prefs]
+        allTags = [tag for tag in lookup.getTags(conn, 'genre')
+                        if tag['tid'] not in tids]
+        # session['visits'] = 1+int(session['visits'])
+        if prefs:
             return render_template('profile.html',
-                                    page_title="{}'s Profile".format(username),
-                                    username=username, uid=uid
-                                    )
-
+                                page_title="{}'s Profile".format(username),
+                                username=username, uid=uid, prefs=prefs,
+                                allTags=allTags
+                                )
         else:
-            flash('You are not logged in. Please login or join')
-            return redirect( url_for('index') )
-    except Exception as err:
-        flash('Some kind of error '+str(err))
+            return render_template('profile.html',
+                                page_title="{}'s Profile".format(username),
+                                username=username, uid=uid, prefs={},
+                                allTags=allTags
+                                )
+
+    else:
+        flash('You are not logged in. Please login or join')
         return redirect( url_for('index') )
+    # except Exception as err:
+    #     flash('Some kind of error '+str(err))
+    #     return redirect( url_for('index') )
+
+@app.route('/updateProfile/', methods=["POST"])
+def updateProfile():
+    conn = lookup.getConn(CONN)
+    uid = session['uid']
+    dob = request.form.get('dob')
+
+    lookup.updateProfile(conn, uid, dob)
+    return redirect( url_for('profile', uid=uid))
 
 @app.route('/prefs/<uid>', methods=["GET"])
 def prefs(uid):
@@ -153,9 +177,9 @@ def prefs(uid):
             allTags = [tag for tag in lookup.getTags(conn, 'genre')
                          if tag['tid'] not in tids]
             if prefs:
-                return render_template('edit-profile.html', uid=uid, prefs=prefs, allTags=allTags)
+                return render_template('profile.html', uid=uid, prefs=prefs, allTags=allTags)
             else:
-                return render_template('edit-profile.html', uid=uid, prefs={}, allTags=allTags)
+                return render_template('profile.html', uid=uid, prefs={}, allTags=allTags)
         else: 
             flash("Please log in or join")
             return redirect(url_for('index'))
@@ -270,10 +294,10 @@ def read(sid, cnum):
     # print("sid: "+str(sid))
     # print("cnum: "+str(cnum))
     chapter = lookup.getChapter(conn, sid, cnum)
-    # print('Chapter dict:')
-    # print(chapter)
+    print('Chapter dict:')
+    print(chapter)
     cid = chapter['cid']
-    print(cid)
+    # print(cid)
     try:
         uid = session['uid']
         comments = lookup.getComments(conn, uid, cid)
@@ -376,6 +400,10 @@ def addComment():
 #     except Exception as err:
 #         print(err)
 #         return jsonify( {'error': True, 'err': str(err) } )
+
+@app.route('/rateAjax/', methods=["POST"])
+def rateAjax():
+    pass
 
 @app.route('/logout/')
 def logout():

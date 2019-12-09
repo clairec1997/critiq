@@ -38,6 +38,12 @@ def getLogin(conn, username):
                      [username])
     return curs.fetchone()
 
+def updateProfile(conn, uid, dob):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''update users
+                    set dob=%s
+                    where uid=%s''', [dob, uid])
+
 def searchWorks(conn, kind, searchterm):
     '''finds works with title including searchterm or tag = searchterm'''
     curs = dbi.dictCursor(conn)
@@ -127,6 +133,7 @@ def getChapter(conn, sid, cnum):
     curs = dbi.dictCursor(conn)
     curs.execute('''select works.title as title,
                     works.summary as summary, 
+                    works.wip as wip,
                     works.title as title, 
                     chapters.filename as filename,
                     chapters.cid as cid 
@@ -217,6 +224,7 @@ def getPrefs(conn, uid):
                 using(tid) where uid=%s''', 
                 [uid])
     return curs.fetchall()
+    
 def updatePrefs(conn, uid, prefs):
     curs = dbi.dictCursor(conn)
     curs.execute('''delete from prefs where uid=%s''',
@@ -228,13 +236,15 @@ def updatePrefs(conn, uid, prefs):
 
 def getRecs(conn, uid):
     curs = dbi.dictCursor(conn)
+    print(getPrefs(conn, uid))
     tags = tuple([tag['tid'] for tag in getPrefs(conn, uid)])
     print (tags)
     curs.execute('''select sid, uid, title, updated, summary, 
                 stars, count(sid), username from 
-                (select sid from taglink where tid in %s group by sid)
-                as q1 left outer join works using(sid) 
-                left outer join (select uid, username from users) as q2 
+                    (select sid from taglink where tid in %s group by sid) as q1 
+                left outer join works using(sid) 
+                left outer join 
+                    (select uid, username from users) as q2 
                 using (uid) 
                 left outer join chapters using(sid) group by sid
                 order by stars desc''', 
