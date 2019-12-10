@@ -4,7 +4,7 @@ from flask import (Flask, render_template, make_response, url_for, request,
 import dbi
 from werkzeug import secure_filename
 import sys,os,random
-
+import datetime as dt
 import lookup
 import bleach
 import bcrypt
@@ -66,12 +66,14 @@ def join():
         hashed_str = hashed.decode('utf-8')
 
         conn = lookup.getConn(CONN)
+        lock.acquire()
         try:
             lookup.insertPass(conn, username, hashed_str)
         except Exception as err: # this is not getting thrown
             flash('That username is taken.')#: {}'.format(repr(err)))
             return redirect(url_for('index'))
         uid = lookup.getUIDFirst(conn)
+        lock.release()
         # print(uid)
         flash('FYI, you were issued UID {}'.format(uid))
         session['username'] = username
@@ -233,7 +235,9 @@ def add():
             status = request.form['isFin']
         
             conn = lookup.getConn(CONN)
+            lock.acquire()
             sid = lookup.addStory(conn, uid, title, summary, status)[0]
+            lock.release()
             lookup.addTags(conn, sid, genre, warnings, audience, status)
 
             return redirect(url_for('update', sid=sid))
@@ -304,7 +308,12 @@ def read(sid, cnum):
         # print(cid)
         try:
             uid = session['uid']
+
+            #add to history
+            print(lookup.addToHistory(conn, uid, sid))
+
             comments = lookup.getComments(conn, uid, cid)
+            
             # print('Comments:')
             # print(comments)
             infile = open(chapter['filename'], 'r')
@@ -315,7 +324,11 @@ def read(sid, cnum):
             numChap = lookup.getNumChaps(conn, sid)['count(cid)']
             # print(numChap)
             work = lookup.getStory(conn, sid)
-            # print(work)
+            print(work)
+            if uid == work['uid']:
+                allComments = lookup.getAllComments(conn, cid)
+            else:
+                allComments = None
 
             if 'username' not in session:
                 return redirect(url_for('index'))
@@ -331,7 +344,8 @@ def read(sid, cnum):
                                         allch=allch,
                                         comments=comments,
                                         uid=uid,
-                                        maxCh=numChap)
+                                        maxCh=numChap,
+                                        allComments=allComments)
             else:
                 return render_template('read.html', 
                                         title=work['title'], 
@@ -344,7 +358,8 @@ def read(sid, cnum):
                                         allch=allch,
                                         comments=comments,
                                         uid=uid,
-                                        maxCh=numChap)
+                                        maxCh=numChap,
+                                        allComments=allComments)
         except Exception as err:
             print(err)
             return redirect( url_for('index') )
@@ -378,7 +393,9 @@ def addComment():
     # print(commentText)
     if 'uid' in session:
         uid = session['uid']
+        lock.acquire()
         lookup.addComment(conn, commentText, uid, cid)
+        lock.release()
         flash('Comment submitted!')
         return redirect(request.referrer)
     else:
@@ -443,7 +460,7 @@ def logout():
         flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/search/<search_kind>', defaults={'search_term': ""})
+@app.route('/search/<search_kind>/', defaults={'search_term': ""})
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
@@ -459,6 +476,7 @@ def worksByTerm(search_kind, search_term):
     # else:
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term))
+    print (res)
 
     resKind = "Authors" if kind == "author" else "Works"
     nm = "Tag" if (kind == "tag") else "Term"
