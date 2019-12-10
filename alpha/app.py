@@ -362,18 +362,11 @@ def bookmarks():
 @app.route('/recommendations/', methods=["GET", "POST"])
 def recommendations():
     if 'uid' in session:
-        if request.method=="POST":
-            filters = tuple(request.form.getlist('warnings[]'))
-            print (filters)
-            
-        else:
-            uid = session['uid']
-            conn = lookup.getConn(CONN)
-            warnings = lookup.getTags(conn, 'warnings')
-
-            recs = lookup.getRecs(conn, uid)
-            return render_template('search.html',
-                                    resKind="Recs", res = recs, warnings=warnings)
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        recs = lookup.getRecs(conn, uid)
+        return render_template('search.html',
+                                resKind="Recs", res = recs)
     else:
         return redirect(url_for('index'))
 
