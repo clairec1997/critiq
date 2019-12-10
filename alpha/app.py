@@ -4,6 +4,7 @@ from flask import (Flask, render_template, make_response, url_for, request,
 import dbi
 from werkzeug import secure_filename
 import sys,os,random
+from threading import Thread, Lock
 
 import lookup
 import bleach
@@ -14,6 +15,8 @@ ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 CONN = 'critiq_db'
 # CONN = 'ccannatt_db'
+
+lock = Lock()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
