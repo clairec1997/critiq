@@ -66,12 +66,14 @@ def join():
         hashed_str = hashed.decode('utf-8')
 
         conn = lookup.getConn(CONN)
+        lock.acquire()
         try:
             lookup.insertPass(conn, username, hashed_str)
         except Exception as err: # this is not getting thrown
             flash('That username is taken.')#: {}'.format(repr(err)))
             return redirect(url_for('index'))
         uid = lookup.getUIDFirst(conn)
+        lock.release()
         # print(uid)
         flash('FYI, you were issued UID {}'.format(uid))
         session['username'] = username
@@ -443,7 +445,7 @@ def logout():
         flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/search/<search_kind>', defaults={'search_term': ""})
+@app.route('/search/<search_kind>/', defaults={'search_term': ""})
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
