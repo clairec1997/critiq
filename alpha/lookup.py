@@ -306,6 +306,19 @@ def addToHistory(conn, uid, sid):
     curs.execute('''insert into history values(%s, %s, %s) 
                     on duplicate key update visited = %s''',
                     [uid, sid, now, now])
+def getHistory(conn, uid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select sid, uid, title, updated, summary, 
+                    stars, count(sid), username, visited from  
+                    (select sid, visited from history where uid = %s) as q1
+                    left outer join works using(sid)
+                    left outer join 
+                    (select uid, username from users) as q2 
+                    using(uid) 
+                    left outer join chapters using(sid) group by sid
+                    order by visited''', 
+                    [uid])
+    return curs.fetchall()
     
 def getAllCommets(conn, cid):
     curs = dbi.dictCursor(conn)

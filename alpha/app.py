@@ -501,6 +501,17 @@ def chapIndex():
     print(sid, cnum)
     return redirect( url_for('read', sid=sid, cnum=cnum))
 
+@app.route('/history/', methods = ["GET"])
+def history():
+    if 'uid' in session:
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        hist = lookup.getHistory(conn, uid)
+        return render_template('history.html',
+                                history=hist)
+    else:
+        return redirect(url_for('index'))
+
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
