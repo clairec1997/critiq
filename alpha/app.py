@@ -35,6 +35,7 @@ def index():
         kind = request.form.get('search_kind')
         term = (request.form.get('select_tag') if kind == "tag" 
                 else request.form.get('search_term'))
+        print ("term", term)
 
         return redirect(url_for('worksByTerm', search_kind=kind, search_term=term))    
     else:
@@ -449,15 +450,17 @@ def logout():
         flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/search/<search_kind>', defaults={'search_term': ""})
+@app.route('/search/<search_kind>/', defaults={'search_term': ""})
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
+    print ("term ", term)
     kind = search_kind
     conn = lookup.getConn(CONN)
     if (request.method == "POST") and not (kind == "author"):
         filters = tuple(request.form.getlist('warnings[]'))
         res = lookup.searchWorks(conn, kind, term, filters)
+        print (res)
     # if no search term, defaults to all movies
     # if request.form.getlist('warnings[]'):
 
