@@ -288,3 +288,8 @@ def addRating(conn, uid, sid, rating):
     else:
         curs.execute('''insert into ratings(uid, sid, rating) 
                         values(%s, %s, %s)''', [uid, sid, rating])
+
+def getNumChaps(conn, sid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select count(cid) from chapters where sid=%s''', [sid])
+    return curs.fetchone()

@@ -10,9 +10,11 @@
         {% if resKind=="Recs" %}
         <h1>Recommendations:</h1>
         {% else %}
-        <h1>Search Results for {{resKind}}: '{{term}}' </h1> 
+        <h1>Search results for {{resKind}}: '{{term}}' </h1> 
         {% endif %}
-        <table id="res-list">
+        <br>
+        <table id="res-list" class="table">
+            <thead>
             <tr>
 	      {% if (resKind=="Works") or (resKind=="Recs") %}
                 <th>Title</th>
@@ -23,14 +25,21 @@
 		<th>Author Username</th>
 	      {% endif %}
             </tr>
+        </thead>
         {%for result in res %}
         {% if (resKind=="Works") or (resKind=="Recs") %}
             {% if result and result['sid'] %}   
             <tr work-sid="{{result['sid']}}">
                 <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
-                <td class="author">{{result['username']}}</td>
+                <td class="author"><a href="{{url_for('profile', username=result['username'])}}">{{result['username']}}</a></td>
                 <td class="chapter-cnt">{{result['count(sid)']}}</td>
-                <td class="updated">{{result['wip']}}</td>
+                <td class="updated">
+                    {% if result['wip'] == 0 %}
+                    No
+                    {% else %}
+                    Yes
+                    {% endif %}
+                </td>
             </tr> 
             {% else %}
             <tr><td>No results found</td></tr>

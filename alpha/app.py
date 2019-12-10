@@ -105,7 +105,7 @@ def login():
             session['username'] = username
             session['uid'] = row['uid']
             uid=session['uid']
-            print(session['uid'])
+            # print(session['uid'])
             session['logged_in'] = True
             # session['visits'] = 1
             return redirect( url_for('profile', username=username) )
@@ -126,7 +126,8 @@ def profile(username):
         if 'uid' in session:
             uid = session['uid']
             # conn = lookup.getConn(CONN)
-            lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'))      
+            lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'))
+            flash('Your preferences have been updated!')      
     
     # don't trust the URL; it's only there for decoration
     if 'username' in session:
@@ -297,20 +298,22 @@ def read(sid, cnum):
     # print("cnum: "+str(cnum))
     try:
         chapter = lookup.getChapter(conn, sid, cnum)
-        print('Chapter dict:')
-        print(chapter)
+        # print('Chapter dict:')
+        # print(chapter)
         cid = chapter['cid']
         # print(cid)
         try:
             uid = session['uid']
             comments = lookup.getComments(conn, uid, cid)
-            print('Comments:')
-            print(comments)
+            # print('Comments:')
+            # print(comments)
             infile = open(chapter['filename'], 'r')
             story = infile.read()
             infile.close()
 
             allch = lookup.getChapters(conn,sid)
+            numChap = lookup.getNumChaps(conn, sid)['count(cid)']
+            # print(numChap)
             work = lookup.getStory(conn, sid)
             # print(work)
 
@@ -327,7 +330,8 @@ def read(sid, cnum):
                                         update=True,
                                         allch=allch,
                                         comments=comments,
-                                        uid=uid)
+                                        uid=uid,
+                                        maxCh=numChap)
             else:
                 return render_template('read.html', 
                                         title=work['title'], 
@@ -339,7 +343,8 @@ def read(sid, cnum):
                                         update=False,
                                         allch=allch,
                                         comments=comments,
-                                        uid=uid)
+                                        uid=uid,
+                                        maxCh=numChap)
         except Exception as err:
             print(err)
             return redirect( url_for('index') )
@@ -413,17 +418,17 @@ def addComment():
 
 @app.route('/rateAjax/', methods=["POST"])
 def rateAjax():
-    print('rateAjax called')
+    # print('rateAjax called')
     conn = lookup.getConn(CONN)
     rating = request.form.get('rating')
     sid = request.form.get('sid')
     uid = session['uid']
-    print("rating to add:")
-    print(rating)
+    # print("rating to add:")
+    # print(rating)
     lookup.addRating(conn, uid, sid, rating)
     avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
-    print("average rating for sid " + str(sid))
-    print(avgRating)
+    # print("average rating for sid " + str(sid))
+    # print(avgRating)
     lookup.updateAvgRating(conn, sid, avgRating)
     return jsonify(rating=rating, avgRating=avgRating)
     
@@ -469,6 +474,13 @@ def worksByTerm(search_kind, search_term):
     #return "<p>{}</p>".format(res)
     return render_template('search.html', resKind=resKind, term=term, 
                             res=res, warnings=lookup.getTags(conn, 'warnings'))
+
+@app.route('/chapIndex/', methods=["POST"])
+def chapIndex():
+    sid = request.form.get('sid')
+    cnum = request.form.get('cid')
+    print(sid, cnum)
+    return redirect( url_for('read', sid=sid, cnum=cnum))
 
 if __name__ == '__main__':
 

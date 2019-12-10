@@ -2,6 +2,8 @@
 
 {% block content %}
 
+<a href= "{{ url_for('add') }}"><button class="btn btn-info">Add a story!</button></a>
+<br> <br>
 {% if stories %}
 
     {% for story in stories %}
@@ -14,11 +16,10 @@
             <p>Warnings: {{ story['warnings'] }} </p>
             <p>Stars: {{ story['stars'] }} </p>
         </a>
-    </div>    
+    </div>  
+    <br>  
     {% endfor %}
 
 {% endif %}
-
-<a href= "{{ url_for('add') }}"><p>Add a story!</p></a>
 
 {% endblock %}

@@ -1,13 +1,11 @@
-/* For flashed messages; make them stand out using red and italics */
-
 #messages {
-    color: red;
+    color: green;
     font-style: italic;
 }
 
 h1 {
     font-size: 200%;
-    color: teal;
+    color: rgb(0, 65, 0);
 }
 
 .row {
@@ -21,9 +19,11 @@ h1 {
     -ms-user-select: none;
     user-select: none;
 }
+
 #selTag {
     display: none;
 }
+
 .search_term {
     visibility: visible;
 }
@@ -32,10 +32,62 @@ h1 {
     background-color: #EEEEEE;
     padding: 10px;
     border-radius: 5px;
-    /* margin-bottom: 10px; */
 }
 
 .story {
-    border-color: grey;
+    border-style: solid;
+    border-color: #EEEEEE;
+    border-width: 2px;
     padding: 10px;
+}
+
+a {
+    color: green;
+}
+
+a:hover {
+    color: rgb(0, 65, 0);
+}
+#prefsBox {
+    background-color: #EEEEEE;
+    padding: 10px;
+}
+
+.managestory {
+    background-color: #EEEEEE;
+    padding: 10px;
+}
+
+#tags {
+
+}
+
+.btn-secondary {
+    background-color: #888888;
+    border-color: #888888;
+}
+
+.btn-secondary:hover {
+    background-color: #555555
+}
+
+.nav-item input {
+    padding-left: 5px;
+}
+
+.btn-info {
+    background-color: green;
+    border-color: green;
+}
+
+.btn-info:hover {
+    background-color: rgb(0, 65, 0);
+}
+
+.inline {
+    padding-right: 5px;
+}
+
+#nextprev {
+    margin: auto;
 }
