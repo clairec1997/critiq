@@ -372,7 +372,7 @@ def recommendations():
 
             recs = lookup.getRecs(conn, uid)
             return render_template('search.html',
-                                    resKind="Recs", res = recs, warnings=warnings)
+                                    resKind="Recs", res = recs, warnings=[])
     else:
         return redirect(url_for('index'))
 

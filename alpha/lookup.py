@@ -50,11 +50,13 @@ def updateProfile(conn, uid, dob):
                     where uid=%s''', [dob, uid])
 
 def searchWorks(conn, kind, searchterm, filters):
-    '''finds works with title including searchterm or tag = searchterm'''
+    '''finds works with title including searchterm or tag = searchterm 
+        takes chosen filters into acct'''
     curs = dbi.dictCursor(conn)
 
     dofilter = ("where sid not in (select sid from taglink where tid in %s)" 
                 if filters else "")
+
     searchParam =  (['%' + searchterm + '%'] if kind == "work" 
                         else [searchterm])     
 
@@ -186,11 +188,11 @@ def addStory(conn, uid, title, summary, isFin):
     curs.execute('select last_insert_id()')
     return curs.fetchone()
 
-def getTagsAjax(conn):
-    '''given a conn, gets all tag names'''
-    curs = dbi.dictCursor(conn)
-    curs.execute('''select tname from tags''')
-    return curs.fetchall()
+# def getTagsAjax(conn):
+#     '''given a conn, gets all tag names'''
+#     curs = dbi.dictCursor(conn)
+#     curs.execute('''select tname from tags''')
+#     return curs.fetchall()
     
 def addTags(conn, sid, genre, warnings, audience, isFin):
     '''adds tags to a story'''
