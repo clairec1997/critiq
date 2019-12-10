@@ -4,7 +4,8 @@ from flask import (Flask, render_template, make_response, url_for, request,
 import dbi
 from werkzeug import secure_filename
 import sys,os,random
-import datetime as dt
+from threading import Thread, Lock
+
 import lookup
 import bleach
 import bcrypt
@@ -14,6 +15,8 @@ ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 CONN = 'critiq_db'
 # CONN = 'ccannatt_db'
+
+lock = Lock()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -35,6 +38,7 @@ def index():
         kind = request.form.get('search_kind')
         term = (request.form.get('select_tag') if kind == "tag" 
                 else request.form.get('search_term'))
+        print ("term", term)
 
         return redirect(url_for('worksByTerm', search_kind=kind, search_term=term))    
     else:
@@ -46,7 +50,7 @@ def index():
 @app.route('/getTags/', methods=["POST"])
 def getTags():
     conn = lookup.getConn(CONN)
-    tags = lookup.getTagsAjax(conn)
+    tags = lookup.getTags(conn, 'genre')
 
     return jsonify( {'tags': tags} )
 
@@ -377,11 +381,17 @@ def bookmarks():
 @app.route('/recommendations/', methods=["GET", "POST"])
 def recommendations():
     if 'uid' in session:
-        uid = session['uid']
-        conn = lookup.getConn(CONN)
-        recs = lookup.getRecs(conn, uid)
-        return render_template('search.html',
-                                resKind="Recs", res = recs)
+        if request.method=="POST":
+            filters = tuple(request.form.getlist('warnings[]'))
+            
+        else:
+            uid = session['uid']
+            conn = lookup.getConn(CONN)
+            warnings = lookup.getTags(conn, 'warnings')
+
+            recs = lookup.getRecs(conn, uid)
+            return render_template('search.html',
+                                    resKind="Recs", res = recs, warnings=[])
     else:
         return redirect(url_for('index'))
 
@@ -464,25 +474,23 @@ def logout():
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
+    print ("term ", term)
     kind = search_kind
     conn = lookup.getConn(CONN)
-    # if request.method == "POST":
-    #     filters = tuple(request.form.getlist('warnings[]'))
-    #     res = lookup.searchWorks(conn, kind, term, filters)
-    #search for works like the search term
+    if (request.method == "POST") and not (kind == "author"):
+        filters = tuple(request.form.getlist('warnings[]'))
+        res = lookup.searchWorks(conn, kind, term, filters)
+        print (res)
     # if no search term, defaults to all movies
     # if request.form.getlist('warnings[]'):
 
-    # else:
-    res = (lookup.searchAuthors(conn, term) if kind == "author" 
-    else lookup.searchWorks(conn, kind, term))
-    print (res)
-
+    else:
+        res = (lookup.searchAuthors(conn, term) if kind == "author" 
+        else lookup.searchWorks(conn, kind, term, []))
     resKind = "Authors" if kind == "author" else "Works"
     nm = "Tag" if (kind == "tag") else "Term"
     if not res:
         flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
-    #return "<p>{}</p>".format(res)
     return render_template('search.html', resKind=resKind, term=term, 
                             res=res, warnings=lookup.getTags(conn, 'warnings'))
 

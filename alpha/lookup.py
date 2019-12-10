@@ -50,55 +50,59 @@ def updateProfile(conn, uid, dob):
                     set dob=%s
                     where uid=%s''', [dob, uid])
 
-def searchWorks(conn, kind, searchterm):
-    '''finds works with title including searchterm or tag = searchterm'''
+def searchWorks(conn, kind, searchterm, filters):
+    '''finds works with title including searchterm or tag = searchterm 
+        takes chosen filters into acct'''
     curs = dbi.dictCursor(conn)
+
+    dofilter = ("where sid not in (select sid from taglink where tid in %s)" 
+                if filters else "")
+
+    searchParam =  (['%' + searchterm + '%'] if kind == "work" 
+                        else [searchterm])     
+
+    params = ([searchParam, filters] if filters else [searchParam])
+
     if kind == "work":
-        curs.execute('''select * from 
-                            (select sid, uid, title, updated, 
-                            summary, stars, wip, count(sid) from
-                                (select * from works where title like %s) 
-                            as q1 left outer join chapters using(sid) group by sid) 
-                        as q2 left outer join 
-                        (select uid, username from users) as q3 using(uid)''', 
-                        ['%' + searchterm + '%'])
+        curs.execute('''select * from (select sid, uid, title, updated, 
+                    summary, stars, wip, count(sid) from
+                    (select * from works where title like %s) as q1 
+                    left outer join chapters using(sid) group by sid) as q2 
+                    left outer join (select uid, username from users) as q3 
+                    using(uid)''' + dofilter, 
+                params)
     else:
         curs.execute('''select * from (select sid, uid, title, updated, 
                         summary, stars, wip, count(sid) from 
                         (select tid from tags where tname = %s) as q1 
-                        left outer join (select tid, sid from taglink) as q2
-                        using(tid) 
+                        left outer join taglink using(tid) 
                         left outer join works using(sid)
                         left outer join chapters using(sid) group by sid) as q3
                         left outer join (select uid, username from users) as q4
-                        using(uid)''', [searchterm])
-        
+                        using(uid)''' + dofilter, 
+                        params)
+            
     return curs.fetchall()
 
 
 # def searchWorks(conn, kind, searchterm, filters=None):
 #     '''finds works with title including searchterm or tag = searchterm'''
 #     curs = dbi.dictCursor(conn)
-#     print (kind)
-#     if kind == "work":
-#         print (filters)
-#         if filters:
-#             print (filters)
-#             curs.execute('''select * from 
-#                         (select sid from taglink where tid not in %s group by sid) as q1
-#                         left outer join works using (sid)
-#                         where title like %s''', 
-#                         [filters, '%' + searchterm + '%'])
-#         else:
-#             curs.execute('''select * from 
-#                         (select sid, uid, title, updated, 
-#                         summary, stars, count(sid) from
-#                         (select * from works where title like %s) 
-#                         as q1 left outer join chapters using(sid) group by sid) 
-#                         as q2 left outer join 
-#                         (select uid, username from users) as q3 using(uid)''', 
-#                         ['%' + searchterm + '%'])
+    
+#     curs.execute('''select * from 
+#                     (select sid from taglink where tid not in %s group by sid) as q1
+#                     left outer join works using (sid)
+#                     where title like %s''', 
+#                     [filters, '%' + searchterm + '%'])
 #     else:
+#         curs.execute('''select * from 
+#                     (select sid, uid, title, updated, 
+#                     summary, stars, count(sid) from
+#                     (select * from works where title like %s) 
+#                     as q1 left outer join chapters using(sid) group by sid) 
+#                     as q2 left outer join 
+#                     (select uid, username from users) as q3 using(uid)''', 
+#                     ['%' + searchterm + '%'])
 #         curs.execute('''select * from (select sid, uid, title, updated, 
 #                         summary, stars, count(sid) from 
 #                         (select tid from tags where tname = %s) as q1 
@@ -185,11 +189,11 @@ def addStory(conn, uid, title, summary, isFin):
     curs.execute('select last_insert_id()')
     return curs.fetchone()
 
-def getTagsAjax(conn):
-    '''given a conn, gets all tag names'''
-    curs = dbi.dictCursor(conn)
-    curs.execute('''select tname from tags''')
-    return curs.fetchall()
+# def getTagsAjax(conn):
+#     '''given a conn, gets all tag names'''
+#     curs = dbi.dictCursor(conn)
+#     curs.execute('''select tname from tags''')
+#     return curs.fetchall()
     
 def addTags(conn, sid, genre, warnings, audience, isFin):
     '''adds tags to a story'''
