@@ -24,6 +24,10 @@ h1 {
     display: none;
 }
 
+#formtag {
+    display: none;
+}
+
 .search_term {
     visibility: visible;
 }
