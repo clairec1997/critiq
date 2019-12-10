@@ -146,18 +146,14 @@ def profile(username):
         stories = lookup.getStories(conn, uid)
         # session['visits'] = 1+int(session['visits'])
         if prefs:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs=prefs,
-                                allTags=allTags, stories=stories, currentUsername=currentUsername
-                                )
+            giveprefs = prefs
         else:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs={},
-                                allTags=allTags, stories=stories, currentUsername=currentUsername
-                                )
-
+            giveprefs = {}
+        return render_template('profile.html',
+                            page_title="{}'s Profile".format(username),
+                            username=username, uid=uid, prefs=giveprefs,
+                            allTags=allTags, stories=stories, currentUsername=currentUsername
+                            )
     else:
         flash('You are not logged in. Please login or join')
         return redirect( url_for('index') )
