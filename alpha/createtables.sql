@@ -1,3 +1,5 @@
+drop table if exists history;
+drop table if exists ratings;
 drop table if exists prefs;
 drop table if exists reviewCredits;
 drop table if exists reviews;
@@ -108,7 +110,7 @@ create table prefs (
         on update cascade
         on delete cascade
 )
-ENGINE = InnoDB
+ENGINE = InnoDB;
 
 create table ratings (
     uid int not null,
@@ -116,6 +118,21 @@ create table ratings (
     rating int not null,
     primary key (uid, sid),
     
+    foreign key(uid) references users(uid)
+        on update cascade
+        on delete cascade,
+    foreign key (sid) references works(sid)
+        on update cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+create table history (
+    uid int not null,
+    sid int not null,
+    visited datetime,
+    primary key (uid, sid, visited),
     foreign key(uid) references users(uid)
         on update cascade
         on delete cascade,
