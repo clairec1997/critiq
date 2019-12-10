@@ -108,7 +108,7 @@ def login():
             # print(session['uid'])
             session['logged_in'] = True
             # session['visits'] = 1
-            return redirect( url_for('profile', username=username) )
+            return redirect( url_for('recommendations') )
         else:
             flash('Login incorrect. Try again or join')
             return redirect( url_for('index'))
