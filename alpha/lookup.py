@@ -1,4 +1,5 @@
 import dbi
+import datetime as dt
 
 DSN = None
 
@@ -293,3 +294,8 @@ def getNumChaps(conn, sid):
     curs = dbi.dictCursor(conn)
     curs.execute('''select count(cid) from chapters where sid=%s''', [sid])
     return curs.fetchone()
+
+def addToHistory(conn, uid, sid):
+    now = dt.now()
+    curs = dbi.dictCursor(conn)
+    
