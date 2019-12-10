@@ -132,7 +132,7 @@ create table history (
     uid int not null,
     sid int not null,
     visited datetime,
-    primary key (uid, sid, visited),
+    primary key (uid, sid),
     foreign key(uid) references users(uid)
         on update cascade
         on delete cascade,
