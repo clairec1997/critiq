@@ -17,8 +17,8 @@
 	      {% if (resKind=="Works") or (resKind=="Recs") %}
                 <th>Title</th>
                 <th>Author</th>
-                <th>Chapter Count </th>
-                <th>Date Updated </th>
+                <th># of Chapters </th>
+                <th>Finished? </th>
 	      {% else %}
 		<th>Author Username</th>
 	      {% endif %}
@@ -30,14 +30,14 @@
                 <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
                 <td class="author">{{result['username']}}</td>
                 <td class="chapter-cnt">{{result['count(sid)']}}</td>
-                <td class="updated">{{result['updated']}}</td>
+                <td class="updated">{{result['wip']}}</td>
             </tr> 
             {% else %}
             <tr><td>No results found</td></tr>
             {% endif %} 
 	    {% else %}
 	        <tr uid="{{result['uid']}}">
-	            <td class="uname">{{result['username']}}</td>
+	            <td class="uname"><a href="{{ url_for('profile', username=result['username']) }}">{{result['username']}}</a></td>
 	        </tr>
         {% endif %}
         

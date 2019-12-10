@@ -3,7 +3,7 @@
 {% block content %}
 
 <h1>{{title}}</h1>
-<h5>By {{author}}</h5>
+<h5>By <a href="{{url_for('profile', username=author)}}">{{author}}</a></h5>
 
 {{ story|safe }}
 

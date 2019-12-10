@@ -29,6 +29,11 @@ def getUIDFirst(conn):
     uid = row[0]
     return uid
 
+def getUID(conn, username):
+    curs = dbi.cursor(conn)
+    curs.execute('''select uid from users where username=%s''', [username])
+    return curs.fetchone()
+
 def getLogin(conn, username):
     '''gets hashed password to check for login'''
     curs = dbi.dictCursor(conn)
@@ -50,7 +55,7 @@ def searchWorks(conn, kind, searchterm):
     if kind == "work":
         curs.execute('''select * from 
                             (select sid, uid, title, updated, 
-                            summary, stars, count(sid) from
+                            summary, stars, wip, count(sid) from
                                 (select * from works where title like %s) 
                             as q1 left outer join chapters using(sid) group by sid) 
                         as q2 left outer join 
@@ -58,7 +63,7 @@ def searchWorks(conn, kind, searchterm):
                         ['%' + searchterm + '%'])
     else:
         curs.execute('''select * from (select sid, uid, title, updated, 
-                        summary, stars, count(sid) from 
+                        summary, stars, wip, count(sid) from 
                         (select tid from tags where tname = %s) as q1 
                         left outer join (select tid, sid from taglink) as q2
                         using(tid) 

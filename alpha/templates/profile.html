@@ -7,7 +7,8 @@
 
 <h4>Help us find stories that you will enjoy!</h4> 
 
-<form id="prefs" method="POST" action="{{url_for('profile', uid=uid)}}">
+{% if currentUsername == username %}
+<form id="prefs" method="POST" action="{{url_for('profile', username=username)}}">
 <label id="tags">I Like Stories About...
     {% for tag in prefs %}
     <br>
@@ -20,6 +21,15 @@
 </label>
 <input type="submit" name="submit-btn" value="Submit Changes">
 </form>
+{% endif %}
+
+<h5>Stories by this user:</h5>
+{% for story in stories %}
+<div class=story>
+    <h5><a href="{{url_for('read', sid=story.sid)}}">{{story.title}}</a></h5>
+    <p>{{story.summary}}</p>
+</div>
+{% endfor %}
 <!-- 
 <div class="prefs">
     <a href="{{url_for('prefs', uid=uid)}}"> 

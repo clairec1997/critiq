@@ -67,7 +67,7 @@
                   <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Profile</a>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                       
-                      <a class="dropdown-item" href="{{url_for('profile', uid=session['uid'])}}">My Profile</a>
+                      <a class="dropdown-item" href="{{url_for('profile', username=session['username'])}}">My Profile</a>
                       <a class="dropdown-item" href="{{url_for('manage')}}">Manage My Stories</a>
                       <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
                       <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>

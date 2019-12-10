@@ -78,7 +78,7 @@ def join():
         session['uid'] = uid
         session['logged_in'] = True
         # session['visits'] = 1
-        return redirect( url_for('profile', uid=uid) ) #should put username in instead? more readable
+        return redirect( url_for('profile', username=username) )
     except Exception as err:
         flash('Form submission error '+str(err))
         return redirect( url_for('index') )
@@ -108,7 +108,7 @@ def login():
             print(session['uid'])
             session['logged_in'] = True
             # session['visits'] = 1
-            return redirect( url_for('profile', uid=uid) )
+            return redirect( url_for('profile', username=username) )
         else:
             flash('Login incorrect. Try again or join')
             return redirect( url_for('index'))
@@ -118,37 +118,37 @@ def login():
 
 
 #we should make this by username, not uid
-@app.route('/profile/<uid>', methods = ["GET", "POST"]) #allow everyone to access all profiles, but only if logged in can change data
-def profile(uid):
+@app.route('/profile/<username>', methods = ["GET", "POST"]) #allow everyone to access all profiles, but only if logged in can change data
+def profile(username):
     conn = lookup.getConn(CONN)
     # try:
     if request.method == "POST":
         if 'uid' in session:
             uid = session['uid']
-            conn = lookup.getConn(CONN)
+            # conn = lookup.getConn(CONN)
             lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'))      
     
     # don't trust the URL; it's only there for decoration
     if 'username' in session:
-        print('\n\n')
-        username = session['username']
-        uid = session['uid']
+        currentUsername = session['username']
+        uid = lookup.getUID(conn, username)#session['uid']
         prefs = lookup.getPrefs(conn, uid)
         tids = [tag['tid'] for tag in prefs]
         allTags = [tag for tag in lookup.getTags(conn, 'genre')
                         if tag['tid'] not in tids]
+        stories = lookup.getStories(conn, uid)
         # session['visits'] = 1+int(session['visits'])
         if prefs:
             return render_template('profile.html',
                                 page_title="{}'s Profile".format(username),
                                 username=username, uid=uid, prefs=prefs,
-                                allTags=allTags
+                                allTags=allTags, stories=stories, currentUsername=currentUsername
                                 )
         else:
             return render_template('profile.html',
                                 page_title="{}'s Profile".format(username),
                                 username=username, uid=uid, prefs={},
-                                allTags=allTags
+                                allTags=allTags, stories=stories, currentUsername=currentUsername
                                 )
 
     else:
@@ -165,7 +165,8 @@ def updateProfile():
     dob = request.form.get('dob')
 
     lookup.updateProfile(conn, uid, dob)
-    return redirect( url_for('profile', uid=uid))
+    username = session['username']
+    return redirect( url_for('profile', username=username))
 
 @app.route('/prefs/<uid>', methods=["GET"])
 def prefs(uid):
