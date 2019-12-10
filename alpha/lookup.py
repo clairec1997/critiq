@@ -264,8 +264,7 @@ def getComments(conn, uid, cid):
 
 def calcAvgRating(conn, sid):
     curs = dbi.dictCursor(conn)
-    curs.execute('''select avg(isHelpful) from reviews
-                        inner join reviewCredits using(cid)
+    curs.execute('''select avg(rating) from ratings
                         inner join works using(sid)
                         where sid=%s''', [sid])
     return curs.fetchone()
@@ -275,7 +274,12 @@ def updateAvgRating(conn, sid, avg):
     curs.execute('''update works set avgRating=%s 
                     where sid=%s''', [avg, sid])
 
-def addRating(conn, sid, rating):
+def addRating(conn, uid, sid, rating):
     curs = dbi.dictCursor(conn)
-    curs.execute('''update reviews set rating=%s 
-                    where sid=%s''', [rating, sid])
+    curs.execute('''select * from ratings where sid=%s and uid=%s''', [sid, uid])
+    if curs.fetchone() is not None:
+        curs.execute('''update ratings set rating=%s 
+                    where sid=%s and uid=%s''', [rating, sid, uid])
+    else:
+        curs.execute('''insert into ratings(uid, sid, rating) 
+                        values(%s, %s, %s)''', [uid, sid, rating])

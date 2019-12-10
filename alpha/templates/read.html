@@ -7,9 +7,10 @@
 
 {{ story|safe }}
 
+<!-- Make this into a form - need next chapter button, prev chap, chap index -->
 <ul>
     {% for i in allch %}
-        <a href="{{url_for('read', sid=i['sid'], cnum=i['cnum'])}}"><p>Read chapter {{i['cnum']}}</p></a>
+        <li><a href="{{url_for('read', sid=i['sid'], cnum=i['cnum'])}}"><p>Read chapter {{i['cnum']}}</p></a></li>
     {% endfor %}
 </ul>
 
@@ -25,7 +26,28 @@
         <br><br>
     {% endfor %}
 </div>
-<div id="commentForm">
+
+{% if chapter.wip %}
+    <form id="rateForm" method = "POST" action="{{url_for('rateAjax')}}">  
+        <input class="rateSid" value={{sid}} name="sid" type=hidden>
+        <input class="rateUid" value={{uid}} name="sid" type=hidden>
+
+        <label id="rate1" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=1 name="rating"> </label>
+        <label id="rate2" class="rating"><div class=labelInput> &#9734;</div> 
+            <input class="ratingInput" type="radio" value=2 name="rating"> </label>
+        <label id="rate3" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=3 name="rating"> </label>
+        <label id="rate4" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=4 name="rating">  </label>
+        <label id="rate5" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=5 name="rating"> </label>
+        <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
+
+    <p id="avgCol"></p>
+    </form>
+{% endif %}
+
     <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
         <label>Add a comment on this chapter</label>
             <textarea name="commentText" rows="8" class="form-control"></textarea>
@@ -34,65 +56,53 @@
             <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
     </form>
 
-    {% if chapter.wip %}
-    <tr>
-        <form id="rateForm" method = "POST" action="{{url_for('rateAjax')}}">  
-            <input value={{sid}} name="sid" type=hidden>
-        <td>
-            <label class="rating"> &#9734 
-                <input type="radio" value=1 name="rating"> </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=2 name="rating"> </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=3 name="rating"> </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=4 name="rating">  </label>
-            <label class="rating"> &#9734 
-                <input type="radio" value=5 name="rating"> </label>
-            <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
-        </td>
-
-        <td id="avgCol">Average rating: {{ story.avgRating}}/5</td>
-        </form>
-    </tr>
-    {% endif %}
-
-
     <p id="commentConfirmation">Comment submitted!</p>
 
-</div>
 
 <script>
     $("#commentConfirmation").hide()
-    //will implement Ajax for comments in alpha phase
+    $("#avgCol").hide()
+    $("input[type=radio].ratingInput").hide()
     var progressive_on = true;
-    // var URL = "{{url_for('rateAjax')}}"    
+    var RATEURL = "{{url_for('rateAjax')}}"    
 
-    $("#rateForm").click(function() { 
-        console.log('adding comment with Ajax')
+    // $("input:radio.ratingInput").click(function() { 
+    $("#rateForm").on("click", "input:radio.ratingInput", function(event) {
+        // $(".rating").html(" &#9734;")
+        console.log('adding rating with Ajax')
         //turn on ajax
         if (progressive_on) {
-            rate = $(this).val()
-            for (i = 0; i < rate, i++) {
-                if ($(this).closest("td").find("input").val() == i) {
-                    $(this).closest("td").find("label").text(" &#9733");
-                }
-            }
+            rate = $(this).val();
+            console.log(rate);
+            // $(this).closest("form").find("#rate" + rate).text(" &#9733;");
+            // console.log('looping')
+            for (i = 1; i <= rate; i++) {
+                // console.log(i)
+                $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9733;');
+            };
+            // console.log('looping 2')
+            for (i = 5; i > rate; i--) {
+                // console.log(i)
+                $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9734;');
+            };
+            // console.log('done looping')
+            $("input:radio.ratingInput").hide()
+
+            //update avg rating
+            var sid = $(this).closest("form").find(".rateSid").val()
+            var uid = $(this).closest("form").find(".rateUid").val()
+            $.post(RATEURL, {'rating': rate,
+                        'sid': sid,
+                        'uid': uid}, showAvgRating)
             
-            // var commentText = $(this).closest("form").find("textarea").val()
-            // console.log(commentText)
-            // var cid = $(this).closest("form").find("#cid").val()
-            // console.log(cid)
-            // var cnum = $(this).closest("form").find("#cnum").val()
-            // console.log(cnum)
-            // var sid = $(this).closest("form").find("#sid").val()
-            // console.log(sid)
-            // var comment = $.post(URL, {'commentText': commentText,
-            //                            'cid': cid,
-            //                            'cnum': cnum,
-            //                            'sid': sid}, showConfirmation)
         }
     });
+
+    function showAvgRating(obj) {
+        console.log(obj)
+        $('#avgCol').text('Average rating: ' + obj.avgRating + '/5')
+        $('#avgCol').show()
+    }
 
 
 </script>

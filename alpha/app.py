@@ -117,6 +117,7 @@ def login():
         return redirect( url_for('index') )
 
 
+#we should make this by username, not uid
 @app.route('/profile/<uid>', methods = ["GET", "POST"]) #allow everyone to access all profiles, but only if logged in can change data
 def profile(uid):
     conn = lookup.getConn(CONN)
@@ -287,58 +288,66 @@ def update(sid, cnum):
         flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/read/<int:sid>', defaults={'cnum': 1})
-@app.route('/read/<int:sid>/<int:cnum>/')
+@app.route('/read/<int:sid>', defaults={'cnum': 1}, methods=["GET", "POST"])
+@app.route('/read/<int:sid>/<int:cnum>/', methods=["GET", "POST"])
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
     # print("sid: "+str(sid))
     # print("cnum: "+str(cnum))
-    chapter = lookup.getChapter(conn, sid, cnum)
-    print('Chapter dict:')
-    print(chapter)
-    cid = chapter['cid']
-    # print(cid)
     try:
-        uid = session['uid']
-        comments = lookup.getComments(conn, uid, cid)
-        print('Comments:')
-        print(comments)
-        infile = open(chapter['filename'], 'r')
-        story = infile.read()
-        infile.close()
+        chapter = lookup.getChapter(conn, sid, cnum)
+        print('Chapter dict:')
+        print(chapter)
+        cid = chapter['cid']
+        # print(cid)
+        try:
+            uid = session['uid']
+            comments = lookup.getComments(conn, uid, cid)
+            print('Comments:')
+            print(comments)
+            infile = open(chapter['filename'], 'r')
+            story = infile.read()
+            infile.close()
 
-        allch = lookup.getChapters(conn,sid)
-        work = lookup.getStory(conn, sid)
-        # print(work)
+            allch = lookup.getChapters(conn,sid)
+            work = lookup.getStory(conn, sid)
+            # print(work)
 
-        if 'username' not in session:
-            return redirect(url_for('index'))
-        if session['username'] == work['username']:
-            return render_template('read.html', 
-                                    title=work['title'], 
-                                    story=story,
-                                    chapter=chapter,
-                                    author=work['username'],
-                                    cnum=cnum,
-                                    sid=sid,
-                                    update=True,
-                                    allch=allch,
-                                    comments=comments)
-        else:
-            return render_template('read.html', 
-                                    title=work['title'], 
-                                    story=story,
-                                    chapter=chapter,
-                                    author=work['username'],
-                                    cnum=cnum,
-                                    sid=sid,
-                                    update=False,
-                                    allch=allch,
-                                    comments=comments)
+            if 'username' not in session:
+                return redirect(url_for('index'))
+            if session['username'] == work['username']:
+                return render_template('read.html', 
+                                        title=work['title'], 
+                                        story=story,
+                                        chapter=chapter,
+                                        author=work['username'],
+                                        cnum=cnum,
+                                        sid=sid,
+                                        update=True,
+                                        allch=allch,
+                                        comments=comments,
+                                        uid=uid)
+            else:
+                return render_template('read.html', 
+                                        title=work['title'], 
+                                        story=story,
+                                        chapter=chapter,
+                                        author=work['username'],
+                                        cnum=cnum,
+                                        sid=sid,
+                                        update=False,
+                                        allch=allch,
+                                        comments=comments,
+                                        uid=uid)
+        except Exception as err:
+            print(err)
+            return redirect( url_for('index') )
     except Exception as err:
-        print(err)
-        return redirect( url_for('index') )
+        return redirect( url_for('notFound') )
 
+@app.route('/404/')
+def notFound():
+    return render_template('404.html', title='404')
 
 @app.route('/bookmarks/')
 def bookmarks():
@@ -403,12 +412,17 @@ def addComment():
 
 @app.route('/rateAjax/', methods=["POST"])
 def rateAjax():
+    print('rateAjax called')
     conn = lookup.getConn(CONN)
     rating = request.form.get('rating')
     sid = request.form.get('sid')
+    uid = session['uid']
+    print("rating to add:")
     print(rating)
-    lookup.addRating(conn, sid, rating)
+    lookup.addRating(conn, uid, sid, rating)
     avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
+    print("average rating for sid " + str(sid))
+    print(avgRating)
     lookup.updateAvgRating(conn, sid, avgRating)
     return jsonify(rating=rating, avgRating=avgRating)
     

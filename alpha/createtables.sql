@@ -109,3 +109,19 @@ create table prefs (
         on delete cascade
 )
 ENGINE = InnoDB
+
+create table ratings (
+    uid int not null,
+    sid int not null,
+    rating int not null,
+    primary key (uid, sid),
+    
+    foreign key(uid) references users(uid)
+        on update cascade
+        on delete cascade,
+    foreign key (sid) references works(sid)
+        on update cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
