@@ -337,33 +337,22 @@ def read(sid, cnum):
             if 'username' not in session:
                 return redirect(url_for('index'))
             if session['username'] == work['username']:
-                return render_template('read.html', 
-                                        title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=True,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments)
-            else:
-                return render_template('read.html', 
-                                        title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=False,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments)
+                isUpdate = True
+            else: 
+                isUpdate = False
+            return render_template('read.html', 
+                                    title=work['title'], 
+                                    story=story,
+                                    chapter=chapter,
+                                    author=work['username'],
+                                    cnum=cnum,
+                                    sid=sid,
+                                    update=isUpdate,
+                                    allch=allch,
+                                    comments=comments,
+                                    uid=uid,
+                                    maxCh=numChap,
+                                    allComments=allComments)
         except Exception as err:
             print(err)
             return redirect( url_for('index') )
