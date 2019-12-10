@@ -235,7 +235,9 @@ def add():
             status = request.form['isFin']
         
             conn = lookup.getConn(CONN)
+            lock.acquire()
             sid = lookup.addStory(conn, uid, title, summary, status)[0]
+            lock.release()
             lookup.addTags(conn, sid, genre, warnings, audience, status)
 
             return redirect(url_for('update', sid=sid))
@@ -306,7 +308,12 @@ def read(sid, cnum):
         # print(cid)
         try:
             uid = session['uid']
+
+            #add to history
+            print(lookup.addToHistory(conn, uid, sid))
+
             comments = lookup.getComments(conn, uid, cid)
+            
             # print('Comments:')
             # print(comments)
             infile = open(chapter['filename'], 'r')
@@ -317,7 +324,11 @@ def read(sid, cnum):
             numChap = lookup.getNumChaps(conn, sid)['count(cid)']
             # print(numChap)
             work = lookup.getStory(conn, sid)
-            # print(work)
+            print(work)
+            if uid == work['uid']:
+                allComments = lookup.getAllComments(conn, cid)
+            else:
+                allComments = None
 
             if 'username' not in session:
                 return redirect(url_for('index'))
@@ -333,7 +344,8 @@ def read(sid, cnum):
                                         allch=allch,
                                         comments=comments,
                                         uid=uid,
-                                        maxCh=numChap)
+                                        maxCh=numChap,
+                                        allComments=allComments)
             else:
                 return render_template('read.html', 
                                         title=work['title'], 
@@ -346,7 +358,8 @@ def read(sid, cnum):
                                         allch=allch,
                                         comments=comments,
                                         uid=uid,
-                                        maxCh=numChap)
+                                        maxCh=numChap,
+                                        allComments=allComments)
         except Exception as err:
             print(err)
             return redirect( url_for('index') )
@@ -380,7 +393,9 @@ def addComment():
     # print(commentText)
     if 'uid' in session:
         uid = session['uid']
+        lock.acquire()
         lookup.addComment(conn, commentText, uid, cid)
+        lock.release()
         flash('Comment submitted!')
         return redirect(request.referrer)
     else:
@@ -461,6 +476,7 @@ def worksByTerm(search_kind, search_term):
     # else:
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term))
+    print (res)
 
     resKind = "Authors" if kind == "author" else "Works"
     nm = "Tag" if (kind == "tag") else "Term"

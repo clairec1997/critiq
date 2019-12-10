@@ -1,5 +1,5 @@
 import dbi
-import datetime as dt
+from datetime import *
 
 DSN = None
 
@@ -296,6 +296,16 @@ def getNumChaps(conn, sid):
     return curs.fetchone()
 
 def addToHistory(conn, uid, sid):
-    now = dt.now()
+    now = datetime.now()
+    #frmat = now.strftime('%Y-%m-%d %H:%M:%S')
     curs = dbi.dictCursor(conn)
+    curs.execute('''insert into history values(%s, %s, %s) 
+                    on duplicate key update visited = %s''',
+                    [uid, sid, now, now])
     
+def getAllCommets(conn, cid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select reviews.reviewText as text, users.username as author, reviewCredits.cid as cid
+                        from reviews inner join reviewCredits using (rid)
+                        inner join users on reviews.commenter=users.uid where reviewCredits.cid=%s''', [cid])
+    return curs.fetchall()
