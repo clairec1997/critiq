@@ -4,7 +4,7 @@
 <body>
 
     <form action="" method="POST">
-        <label><h1>Write Your Story</h1>
+        <label>Write Your Story
             <textarea id="tinytext" name="write"></textarea></label>
         <input type="submit" name="submit" value="submit">
     </form>
@@ -20,7 +20,6 @@
 
     <script>
         story = `{{story|safe}}`
-        console.log(story)
     </script>
 
     <script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
