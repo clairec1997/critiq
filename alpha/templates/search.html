@@ -19,7 +19,7 @@
 	      {% if (resKind=="Works") or (resKind=="Recs") %}
                 <th>Title</th>
                 <th>Author</th>
-                <th># of Chapters </th>
+                <th># of Chapters</th>
                 <!-- <th>Finished? </th> -->
 	      {% else %}
 		<th>Author Username</th>
@@ -35,9 +35,9 @@
                 <td class="chapter-cnt">{{result['count(sid)']}}</td>
                 <!-- <td class="updated">
                     {% if result['wip'] %}
-                    No
-                    {% else %}
                     Yes
+                    {% else %}
+                    No
                     {% endif %}
                 </td> -->
             </tr> 
@@ -56,15 +56,18 @@
         </table>
 
 </div>
+<br><br>
+
 {% if warnings %}
-<div id="filters">
-    <h2>Don't Show Me Works Involving:</h2>
+<div id="filters" class="story">
+    <h4>Don't show me works involving:</h4>
     <form id="filter-frm" method="POST" action="{{request.url}}">
         {% for warning in warnings %}
         <br>
         <input type="checkbox" name="warnings[]" value="{{warning['tid']}}"> {{warning['tname']}}</input>
         {% endfor %}
-        <input type="submit" name="submit-btn" value="Exclude">
+        <br><br>
+        <input type="submit" name="submit-btn" value="Exclude" class="btn btn-secondary">
     </form>
 </div>
 {% endif %}

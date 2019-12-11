@@ -465,7 +465,6 @@ def worksByTerm(search_kind, search_term):
     if (request.method == "POST") and not (kind == "author"):
         filters = tuple(request.form.getlist('warnings[]'))
         res = lookup.searchWorks(conn, kind, term, filters)
-        print (res)
     # if no search term, defaults to all movies
     # if request.form.getlist('warnings[]'):
 
@@ -476,6 +475,7 @@ def worksByTerm(search_kind, search_term):
     nm = "Tag" if (kind == "tag") else "Term"
     if not res:
         flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
+    # return "<p>{}</p>".format(str(res))
     return render_template('search.html', resKind=resKind, term=term, 
                             res=res, warnings=lookup.getTags(conn, 'warnings'))
 

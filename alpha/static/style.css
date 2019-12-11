@@ -95,3 +95,7 @@ a:hover {
 #nextprev {
     margin: auto;
 }
+
+.nonlogo {
+    padding-top: 10px;
+}
