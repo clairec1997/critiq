@@ -302,8 +302,8 @@ def read(sid, cnum):
     # print("cnum: "+str(cnum))
     try:
         chapter = lookup.getChapter(conn, sid, cnum)
-        # print('Chapter dict:')
-        # print(chapter)
+        print('Chapter dict:')
+        print(chapter)
         cid = chapter['cid']
         # print(cid)
         try:

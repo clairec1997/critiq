@@ -8,19 +8,21 @@
         <input type="submit" name="submit">
     </form>
 
-<ul>
-{% for i in allch %}
-    <a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}"><p>Edit chapter {{i['cnum']}}</p></a>
+    <ul>
+    {% for i in allch %}
+        <a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}"><p>Edit chapter {{i['cnum']}}</p></a>
     {% if loop.last %}
-    <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><p>Add Chapter {{i['cnum']+1}}</p></a>
+        <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><p>Add Chapter {{i['cnum']+1}}</p></a>
     {% endif %}
-{% endfor %}
-</ul>
+    {% endfor %}
+    </ul>
 
-<script>
-var story = "{{story|safe}}"
-</script>
-<script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
+    <script>
+        story = `{{story|safe}}`
+        console.log(story)
+    </script>
+
+    <script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
 
 </body>
 {% endblock %}
