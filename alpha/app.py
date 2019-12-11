@@ -375,6 +375,7 @@ def recommendations():
             warnings = lookup.getTags(conn, 'warnings')
 
             recs = lookup.getRecs(conn, uid)
+            # return render_template('recommendations.html', recommendations=recs)
             return render_template('search.html',
                                     resKind="Recs", res = recs, warnings=[])
     else:
@@ -455,19 +456,16 @@ def logout():
         flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
 
-@app.route('/search/<search_kind>/', defaults={'search_term': ""})
+@app.route('/search/<search_kind>/', defaults={'search_term': ""}, methods=["GET", "POST"])
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
-    print ("term ", term)
     kind = search_kind
     conn = lookup.getConn(CONN)
     if (request.method == "POST") and not (kind == "author"):
         filters = tuple(request.form.getlist('warnings[]'))
         res = lookup.searchWorks(conn, kind, term, filters)
     # if no search term, defaults to all movies
-    # if request.form.getlist('warnings[]'):
-
     else:
         res = (lookup.searchAuthors(conn, term) if kind == "author" 
         else lookup.searchWorks(conn, kind, term, []))
