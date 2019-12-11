@@ -1,16 +1,57 @@
 {%extends "base.html" %}
+{% block head_stuff %}
+<script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+<link href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+<link rel="stylesheet" href="{{url_for('static', filename = 'style.css')}}">
+{% endblock %}
 
 {% block content %}
-<!-- <div id="featured-movie">
-    <h3>Featured Movie: #<span id='tt'></span></h3>
-    <h4>Title: <span id='title'></span> Directed By: <span id='director'></span> 
-        Release: <span id='release'></span></h4>
-</div> -->
+<div class="container">
+{% if warnings %}
+	<div class="row">
+        <div id="filter-panel" class="collapse filter-panel">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form class="form-inline" role="form" method="POST" action="{{request.url}}">
+                        <div class="form-group">
+                                <label class="filter-col" style="margin-right:10px;" for="pref-exclude">
+                                    <div class="dropdown">
+                                            <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                Don't Show Me Works Involving:
+                                                <span class="sr-only">Toggle Dropdown</span>
+                                            </button>
+                                            <ul class="dropdown-menu" >
+                                            {% for warning in warnings %}
+                                            <li>
+                                            <label class="checkbox" style="margin-right: 25px;">
+                                                <input type="checkbox" style="margin-left: 10px; margin-right: 7px;" name="warnings[]" value="{{warning['tid']}}">{{warning['tname']}}</input>
+                                            </label>
+                                            </li>
+                                            {% endfor %} 
+                                            </ul>
+                                            <button type="submit" class="btn btn-default filter-col">
+                                                <span class="glyphicon glyphicon-record"></span> Exclude
+                                            </button>
+                                    </div>
+                                </label>                                              
+                        </div> <!-- form group [rows] -->       
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>    
+        <button type="button" class="btn btn-primary" style="background-color:forestgreen; float:right;" data-toggle="collapse" data-target="#filter-panel">
+            <span class="glyphicon glyphicon-cog"></span> Advanced Search
+        </button>
+{% endif %}
+
+
 <div id="results">
         {% if resKind=="Recs" %}
         <h1>Recommendations:</h1>
         {% else %}
-        <h1>Search results for {{resKind}}: '{{term}}' </h1> 
+        <h1 style="padding-top=1%">Search results for {{resKind}}: '{{term}}' </h1> 
         {% endif %}
         <br>
         <table id="res-list" class="table">
@@ -56,20 +97,5 @@
         </table>
 
 </div>
-<br><br>
-
-{% if warnings %}
-<div id="filters" class="story">
-    <h4>Don't show me works involving:</h4>
-    <form id="filter-frm" method="POST" action="{{request.url}}">
-        {% for warning in warnings %}
-        <br>
-        <input type="checkbox" name="warnings[]" value="{{warning['tid']}}"> {{warning['tname']}}</input>
-        {% endfor %}
-        <br><br>
-        <input type="submit" name="submit-btn" value="Exclude" class="btn btn-secondary">
-    </form>
 </div>
-{% endif %}
-
 {%endblock%}

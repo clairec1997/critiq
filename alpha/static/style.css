@@ -5,11 +5,8 @@
 
 h1 {
     font-size: 200%;
+    padding-top:5%;
     color: rgb(0, 65, 0);
-}
-
-.row {
-    padding-top: 5%;
 }
 
 .unselectable {
@@ -46,7 +43,7 @@ h1 {
 }
 
 a {
-    color: green;
+    color: rgb(14, 87, 14);
 }
 
 a:hover {
@@ -99,3 +96,10 @@ a:hover {
 .nonlogo {
     padding-top: 10px;
 }
+.container {
+    max-width: 95%;
+}
+
+
+
+
