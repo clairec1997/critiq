@@ -319,7 +319,7 @@ def getHistory(conn, uid):
                     [uid])
     return curs.fetchall()
     
-def getAllCommets(conn, cid):
+def getAllComments(conn, cid):
     curs = dbi.dictCursor(conn)
     curs.execute('''select reviews.reviewText as text, users.username as author, reviewCredits.cid as cid
                         from reviews inner join reviewCredits using (rid)
