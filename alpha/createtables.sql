@@ -101,6 +101,7 @@ ENGINE = InnoDB;
 create table prefs (
     uid int not null,
     tid int not null,
+    isWarning boolean, 
     primary key (uid, tid),
 
     foreign key(uid) references users(uid)

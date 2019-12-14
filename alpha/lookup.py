@@ -227,13 +227,13 @@ def getChapters(conn, sid):
                 order by cnum asc''',[sid])
     return curs.fetchall()
 
-def getPrefs(conn, uid):
-    '''given uid, retrieves users prefs'''
+def getPrefs(conn, uid, wantsWarnings):
+    '''given uid, retrieves users prefs or warning'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select tid, tname from 
                 prefs left outer join tags 
-                using(tid) where uid=%s''', 
-                [uid])
+                using(tid) where uid=%s and isWarning=%s''', 
+                [uid, wantsWarnings])
     return curs.fetchall()
     
 def updatePrefs(conn, uid, prefs):
@@ -247,8 +247,7 @@ def updatePrefs(conn, uid, prefs):
 
 def getRecs(conn, uid):
     curs = dbi.dictCursor(conn)
-    print(getPrefs(conn, uid))
-    tags = tuple([tag['tid'] for tag in getPrefs(conn, uid)])
+    tags = tuple([tag['tid'] for tag in getPrefs(conn, uid, False)])
     print (tags)
     curs.execute('''select sid, uid, title, updated, summary, 
                 stars, count(sid), username from 
@@ -326,3 +325,18 @@ def getAllComments(conn, cid):
                         from reviews inner join reviewCredits using (rid)
                         inner join users on reviews.commenter=users.uid where reviewCredits.cid=%s''', [cid])
     return curs.fetchall()
+
+def getWarnings(conn, uid):
+    '''given uid, retrieves users prefs'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select tid, tname from 
+                prefs left outer join tags 
+                using(tid) where uid=%s''', 
+                [uid])
+    return curs.fetchall()
+
+def getTitle(conn, sid):
+    '''retrieves story title'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select title from works where sid=%s''', [sid])
+    return curs.fetchone()
