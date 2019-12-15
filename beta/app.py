@@ -14,7 +14,7 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 # CONN = 'critiq_db'
-CONN = 'spulavar_db'
+# CONN = 'spulavar_db'
 
 lock = Lock()
 
@@ -358,7 +358,7 @@ def read(sid, cnum):
             uid = session['uid']
 
             #add to history
-            print(lookup.addToHistory(conn, uid, sid))
+            print(lookup.addToHistory(conn, uid, sid, cid))
             rating = lookup.getRating(conn, sid, uid)
             if rating is not None:
                 rating = rating['rating']
@@ -574,6 +574,8 @@ def history():
                                 page_title="{}'s History".format(username))
     else:
         return redirect(url_for('index'))
+
+
 
 if __name__ == '__main__':
 
