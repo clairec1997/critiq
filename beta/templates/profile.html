@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{username}}'s Profile</h1>
+
+{% if currentUsername == username %}
+<br>
+<h5>Help us find you content that you will enjoy!</h5> 
+
+<div id=prefsBox>
+    <form id="prefs" method="POST" action="{{url_for('profile', username=username)}}">
+    <label id="tags"><h6>I Like Stories About...</h6>
+
+        {% for tag in prefs %}
+        <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked> {{tag['tname']}}</input>
+        <br>
+        {% endfor %}
+        {% for tag in otherTags %}
+        <input type="checkbox" name="pref[]" value="{{tag['tid']}}" > {{tag['tname']}}</input>
+        <br>
+        {% endfor %}
+    </label>
+    <br>
+    <input type="submit" name="submit-btn" value="Update Preferences" class="btn btn-secondary">
+    </form>
+    <form id="filts" method="POST" action="{{url_for('profile', username=username)}}">
+    <label id="warnings"><h6>NEVER Show Me Stories About...</h6>
+
+        {% for tag in warnings %}
+        <input type="checkbox" name="warning[]" value="{{tag['tid']}}" checked> {{tag['tname']}}</input>
+        <br>
+        {% endfor %}
+        {% for tag in otherWarns %}
+        <input type="checkbox" name="warning[]" value="{{tag['tid']}}" > {{tag['tname']}}</input>
+        <br>
+        {% endfor %}
+    </label>
+    <br>
+    <input type="submit" name="submit-btn" value="Exclude Content" class="btn btn-secondary">
+    </form>
+</div>
+<br><br>
+<h5>Stories you've posted:</h5>
+{% else %}
+<h5>Stories by this user:</h5>
+{% endif %}
+
+{% for story in stories %}
+<div class=story>
+    <h5><a href="{{url_for('read', sid=story.sid)}}">{{story.title}}</a></h5>
+    <p>{{story.summary}}</p>
+</div>
+<br>
+{% endfor %}
+
+
+{% endblock %}

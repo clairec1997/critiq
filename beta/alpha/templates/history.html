@@ -1,0 +1,37 @@
+{%extends "base.html" %}
+
+{% block content %}
+
+
+<h1>Recently Read:</h1>
+<div id="history">
+    <table id="history-list" class="table">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th># of Chapters </th>
+            <th>Finished? </th>
+            <th>Visited</th>
+        </tr>
+    </thead>
+    {%for work in history %}
+        {% if work and work['sid'] %}   
+        <tr work-sid="{{work['sid']}}">
+            <td class="title"><a href="{{url_for('read', sid=work.sid)}}">{{work['title']}}</a></td>
+            <td class="author"><a href="{{url_for('profile', username=work['username'])}}">{{work['username']}}</a></td>
+            <td class="chapter-cnt">{{work['count(sid)']}}</td>
+            <td class="updated">
+                {% if work['wip'] == 0 %}
+                No
+                {% else %}
+                Yes
+                {% endif %}
+            </td>
+            <td class="visited">{{work['visited']}}</td>
+        </tr> 
+        {% else %}
+        <tr><td>No results found</td></tr>
+        {% endif %} 
+    {% endfor %}
+{% endblock %}

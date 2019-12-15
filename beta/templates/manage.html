@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<a href= "{{ url_for('add') }}"><button class="btn btn-info">Add a story!</button></a>
+<br> <br>
+{% if stories %}
+
+    {% for story in stories %}
+    <a href= "{{ url_for('update', sid=story['sid']) }}">
+        <div class="managestory">
+            <h4>Title: {{ story['title'] }} </h4>
+            <p>Summary: {{ story['summary'] }} </p>
+            <br>
+            <p>Genre: {{ story['genre'] }} </p>
+            <p>Audience: {{ story['audience'] }} </p>
+            <p>Warnings: {{ story['warnings'] }} </p>
+            <p>Stars: {{ story['stars'] }} </p>
+        </div>  
+    </a>
+    <br>  
+    {% endfor %}
+
+{% endif %}
+
+{% endblock %}

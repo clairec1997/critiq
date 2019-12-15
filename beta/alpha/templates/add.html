@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<form action="" method="POST">
+    <label>Title: <input type="text" name="title"></label> <br>
+    <label>Summary: <textarea name="summary"></textarea></label> <br>
+    <label>Genres:
+        {% for g in genre %}
+            <label> {{ g['tname'] }}
+                <input type="checkbox" name="genre" value="{{ g['tid'] }}">
+            </label> <br>
+        {% endfor %}
+    </label> <br>
+    <label>Audience:
+        {% for a in audience %}
+            <label> {{ a['tname'] }}
+                <input type="radio" name="audience" value="{{ a['tid'] }}">
+            </label> <br>
+        {% endfor %}
+    </label> <br>
+    <label>Warnings:
+        {% for w in warnings %}
+        <label> {{ w['tname'] }}
+            <input type="checkbox" name="warnings" value="{{ w['tid'] }}">
+        </label> <br>
+        {% endfor %}
+    </label> <br>
+    <label>Status:
+        {% for i in isFin %}
+        <label> {{ i['tname'] }}
+            <input type="radio" name="isFin" value="{{ i['tid'] }}">
+        </label> <br>
+        {% endfor %}
+    </label> <br>
+    <input type="submit" value="submit">
+</form>
+
+{% endblock %}

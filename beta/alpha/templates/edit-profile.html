@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Help us find stories that you will enjoy!</h2> 
+
+<form id="prefs" method="POST" action="{{url_for('profile', uid=uid)}}">
+<label id="tags">I Like Stories About...
+    {% for tag in prefs %}
+    <br>
+    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked> {{tag['tname']}}</input>
+    {% endfor %}
+    {% for tag in allTags %}
+    <br>
+    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" > {{tag['tname']}}</input>
+    {% endfor %}
+</label>
+<input type="submit" name="submit-btn" value="done">
+</form>
+
+{% endblock %}

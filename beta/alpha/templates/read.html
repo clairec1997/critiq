@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{{title}}</h1>
+<h4>Chapter {{cnum}}</h4>
+<h5>By <a href="{{url_for('profile', username=author)}}">{{author}}</a></h5>
+
+<form method="POST" action="{{url_for('chapIndex')}}" class="form-inline">
+    <input value={{sid}} name="sid" type=hidden>
+    <div class="inline"><label for="cid">Chapter Index</label></div>
+    <div class="inline"><select class="form-control" id="cid" name="cid">
+        {% for i in allch %}
+            <option value="{{i['cnum']}}">Chapter {{i['cnum']}}</option>
+        {% endfor %}
+    </select></div>
+    <div class="inline"><input type=submit value="Submit" class="btn btn-secondary"></div>
+</form>
+
+<br><br>
+<div class="unselectable story">
+    {{ story|safe }}
+</div>
+
+<br>
+<div id=nextprev>
+    {% if cnum > 1 %}
+    <a href="{{url_for('read', sid=sid, cnum=cnum-1)}}"><button class="btn btn-secondary">&#8592; Previous Chapter</button></a>
+    {% endif %}
+    
+    {% if cnum < maxCh %}
+    <a href="{{url_for('read', sid=sid, cnum=cnum+1)}}"><button class="btn btn-secondary">Next Chapter &#8594;</button></a>
+    {% endif %}
+</div>
+<!-- Need to include a Next Chapter Button -->
+
+<br><br>
+<div id=existingComments>
+    {% if comments %}
+    <h5>Comments you've left on this chapter:</h5>
+    <br>
+    {% else %}
+    <h5>You haven't left any comments on this chapter yet.</h5>
+    {% endif %}
+    {% for comment in comments %}
+        <div class=comment>
+            <p>{{ comment.reviewText }}</p>
+        </div>
+        <br>
+    {% endfor %}
+</div>
+
+<!-- want to reflect previous ratings on page load, probably a beta feature -->
+{% if chapter.wip %}
+    <form id="rateForm" method = "POST" action="{{url_for('rateAjax')}}">  
+        <input class="rateSid" value={{sid}} name="sid" type=hidden>
+        <input class="rateUid" value={{uid}} name="sid" type=hidden>
+
+        <label id="rate1" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=1 name="rating"> </label>
+        <label id="rate2" class="rating"><div class=labelInput> &#9734;</div> 
+            <input class="ratingInput" type="radio" value=2 name="rating"> </label>
+        <label id="rate3" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=3 name="rating"> </label>
+        <label id="rate4" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=4 name="rating">  </label>
+        <label id="rate5" class="rating"><div class=labelInput> &#9734;</div>
+            <input class="ratingInput" type="radio" value=5 name="rating"> </label>
+        <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
+
+    <p id="avgCol"></p>
+    </form>
+{% endif %}
+
+    <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
+        <label>Add a comment on this chapter</label>
+            <textarea name="commentText" rows="8" class="form-control"></textarea>
+            <br>
+            <input value={{chapter.cid}} id="cid" name="cid" type=hidden>
+            <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
+    </form>
+
+    <p id="commentConfirmation">Comment submitted!</p>
+
+
+<script>
+    $("#commentConfirmation").hide()
+    $("#avgCol").hide()
+    $("input[type=radio].ratingInput").hide()
+    var progressive_on = true;
+    var RATEURL = "{{url_for('rateAjax')}}"    
+
+    // $("input:radio.ratingInput").click(function() { 
+    $("#rateForm").on("click", "input:radio.ratingInput", function(event) {
+        // $(".rating").html(" &#9734;")
+        console.log('adding rating with Ajax')
+        //turn on ajax
+        if (progressive_on) {
+            rate = $(this).val();
+            console.log(rate);
+            // $(this).closest("form").find("#rate" + rate).text(" &#9733;");
+            // console.log('looping')
+            for (i = 1; i <= rate; i++) {
+                // console.log(i)
+                $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9733;');
+            };
+            // console.log('looping 2')
+            for (i = 5; i > rate; i--) {
+                // console.log(i)
+                $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9734;');
+            };
+            // console.log('done looping')
+            $("input:radio.ratingInput").hide()
+
+            //update avg rating
+            var sid = $(this).closest("form").find(".rateSid").val()
+            var uid = $(this).closest("form").find(".rateUid").val()
+            $.post(RATEURL, {'rating': rate,
+                        'sid': sid,
+                        'uid': uid}, showAvgRating)
+            
+        }
+    });
+
+    function showAvgRating(obj) {
+        console.log(obj)
+        $('#avgCol').text('Average rating: ' + obj.avgRating + '/5')
+        $('#avgCol').show()
+    }
+
+
+</script>
+
+<noscript>
+    <p>Your browser doesn't support JavaScript.</p>
+</noscript>
+
+{% endblock %}
