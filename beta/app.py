@@ -582,7 +582,21 @@ def markHelpful():
 
 @app.route('/addBookmark/', methods=["POST"])
 def addBookmark():
+    book = request.form['isMark']
+    uid = session['uid']
+    sid = request.form['sid']
+
     conn = lookup.getConn(CONN)
+    isBooked = lookup.isBookmarked(conn, sid, uid)
+
+    if isBooked and book == "0":
+        lookup.removeBookmark(conn, sid, uid)
+        flash("Bookmark removed")
+    elif isBooked is None and book == "1":
+        lookup.addBookmark(conn, sid, uid)
+        flash("Bookmark added")
+    else:
+        flash("Bookmark unchanged")
 
     return redirect(request.referrer)
 

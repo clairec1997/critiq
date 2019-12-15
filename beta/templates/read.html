@@ -6,17 +6,17 @@
 <h4>Chapter {{cnum}}</h4>
 <h5>By <a href="{{url_for('profile', username=author)}}">{{author}}</a></h5>
 
-<!-- <form method="POST" action="{{url_for('addBookmark')}}">
+<form method="POST" action="{{url_for('addBookmark')}}">
     <input value={{sid}} name="sid" type="hidden">
     {% if isBookmark %}
-    <label>Not Bookmarked<input type="checkbox" name="isMark" value="0"></label>
-    <label>Bookmarked<input type="checkbox" name="isMark" value="1" checked></label>
+    <label>Not Bookmarked<input type="radio" name="isMark" value="0"></label>
+    <label>Bookmarked<input type="radio" name="isMark" value="1" checked></label>
     {% else %}
-    <label>Not Bookmarked<input type="checkbox" name="isMark" value="0" checked></label>
-    <label>Bookmarked<input type="checkbox" name="isMark" value="1"></label>
+    <label>Not Bookmarked<input type="radio" name="isMark" value="0" checked></label>
+    <label>Bookmarked<input type="radio" name="isMark" value="1"></label>
     {% endif %}
     <input type="submit" name="submit" value="Change Bookmark"> 
-</form> -->
+</form>
 
 
 <form method="POST" action="{{url_for('chapIndex')}}" class="form-inline">
