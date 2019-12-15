@@ -159,7 +159,7 @@ create table bookmarks (
         on delete cascade,
     foreign key(sid) references works(sid)
         on update CASCADE
-        on delete cascade,
+        on delete cascade
 )
 
 ENGINE = InnoDB;
