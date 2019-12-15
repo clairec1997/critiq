@@ -45,7 +45,7 @@ def index():
         if 'username' in session:
             return redirect( url_for('recommendations'))
         else:
-            return render_template('main.html', page_title="Welcome to Critiq")
+            return render_template('main.html',title='Hello')
 
 @app.route('/getTags/', methods=["POST"])
 def getTags():
@@ -139,32 +139,21 @@ def profile(username):
     if 'username' in session:
         currentUsername = session['username']
         uid = lookup.getUID(conn, username)#session['uid']
-        prefs = lookup.getPrefs(conn, uid, False)
-        prefTids = [tag['tid'] for tag in prefs]
-        otherTags = [tag for tag in lookup.getTags(conn, 'genre')
-                        if tag['tid'] not in prefTids]
-
-        # warnTids = [tag['tid'] for tag in warnings]
-        # otherWarns = [tag for tag in lookup.getTags(conn, 'warnings')
-        #                 if tag['tid'] not in warnTids]
-
+        prefs = lookup.getPrefs(conn, uid)
+        tids = [tag['tid'] for tag in prefs]
+        allTags = [tag for tag in lookup.getTags(conn, 'genre')
+                        if tag['tid'] not in tids]
         stories = lookup.getStories(conn, uid)
         # session['visits'] = 1+int(session['visits'])
         if prefs:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs=prefs,
-                                otherTags=otherTags, stories=stories, 
-                                currentUsername=currentUsername
-                                )
+            giveprefs = prefs
         else:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs={},
-                                otherTags=otherTags, stories=stories, 
-                                currentUsername=currentUsername
-                                )
-
+            giveprefs = {}
+        return render_template('profile.html',
+                            page_title="{}'s Profile".format(username),
+                            username=username, uid=uid, prefs=giveprefs,
+                            allTags=allTags, stories=stories, currentUsername=currentUsername
+                            )
     else:
         flash('You are not logged in. Please login or join')
         return redirect( url_for('index') )
@@ -188,7 +177,7 @@ def prefs(uid):
         if 'uid' in session:
             uid = session['uid']
             conn = lookup.getConn(CONN)
-            prefs = lookup.getPrefs(conn, uid, False)
+            prefs = lookup.getPrefs(conn, uid)
             tids = [tag['tid'] for tag in prefs]
             allTags = [tag for tag in lookup.getTags(conn, 'genre')
                          if tag['tid'] not in tids]
@@ -211,7 +200,7 @@ def manage():
             uid = session['uid']
             conn = lookup.getConn(CONN)
             stories = lookup.getStories(conn, uid)
-            return render_template('manage.html', stories=stories, page_title="Manage My Stories")
+            return render_template('manage.html', title="Hello", stories=stories)
         else: 
             flash("Please log in or join")
             return redirect(url_for('index'))
@@ -230,8 +219,8 @@ def add():
                 warnings = lookup.getTags(conn, 'warnings')
                 audience = lookup.getTags(conn, 'audience')
                 isFin = lookup.getTags(conn, 'isFin')
-                return render_template('add.html', warnings=warnings, 
-                                    genre=genre, audience=audience, isFin=isFin, page_title="Add a Story")
+                return render_template('add.html',title='Add Story', warnings=warnings, 
+                                    genre=genre, audience=audience, isFin=isFin)
             else:
                 flash("Please log in or join")
                 return redirect(url_for('index'))
@@ -273,13 +262,13 @@ def update(sid, cnum):
                     story = infile.read()
                     infile.close()
                 allch = lookup.getChapters(conn, sid)
-                title = lookup.getTitle(conn, sid)
-                return render_template('write.html', sid=sid, cnum=cnum, story=story, 
-                                        allch=allch, page_title="Update '{}'".format(title['title']))
+                return render_template('write.html', title='Update Story',
+                                sid=sid, cnum=cnum, story=story, allch=allch)
+
             if request.method=="POST":
                 sometext = request.form['write']
                 somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
-                    tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span'], 
+                    tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span', 'pre'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
 
@@ -295,7 +284,7 @@ def update(sid, cnum):
 
                 if not chapter:
                     lookup.setChapter(conn, sid, cnum, filename)
-                print("ok i got this")
+
                 return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
             flash('''You are not authorized to edit this work. 
@@ -313,8 +302,8 @@ def read(sid, cnum):
     # print("cnum: "+str(cnum))
     try:
         chapter = lookup.getChapter(conn, sid, cnum)
-        # print('Chapter dict:')
-        # print(chapter)
+        print('Chapter dict:')
+        print(chapter)
         cid = chapter['cid']
         # print(cid)
         try:
@@ -344,33 +333,22 @@ def read(sid, cnum):
             if 'username' not in session:
                 return redirect(url_for('index'))
             if session['username'] == work['username']:
-                return render_template('read.html', 
-                                        page_title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=True,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments)
-            else:
-                return render_template('read.html', 
-                                        page_title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=False,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments)
+                isUpdate = True
+            else: 
+                isUpdate = False
+            return render_template('read.html', 
+                                    title=work['title'], 
+                                    story=story,
+                                    chapter=chapter,
+                                    author=work['username'],
+                                    cnum=cnum,
+                                    sid=sid,
+                                    update=isUpdate,
+                                    allch=allch,
+                                    comments=comments,
+                                    uid=uid,
+                                    maxCh=numChap,
+                                    allComments=allComments)
         except Exception as err:
             print(err)
             return redirect( url_for('index') )
@@ -379,11 +357,11 @@ def read(sid, cnum):
 
 @app.route('/404/')
 def notFound():
-    return render_template('404.html', page_title='404')
+    return render_template('404.html', title='404')
 
 @app.route('/bookmarks/')
 def bookmarks():
-    return render_template('main.html',page_title='Bookmarks')
+    return render_template('main.html',title='Hello')
 
 @app.route('/recommendations/', methods=["GET", "POST"])
 def recommendations():
@@ -397,10 +375,9 @@ def recommendations():
             warnings = lookup.getTags(conn, 'warnings')
 
             recs = lookup.getRecs(conn, uid)
-            username = session['username'] if 'username' in session else ''
+            # return render_template('recommendations.html', recommendations=recs)
             return render_template('search.html',
-                                    resKind="Recs", res = recs, warnings=[],
-                                    page_title="{}'s Home".format(username))
+                                    resKind="Recs", res = recs, warnings=[])
     else:
         return redirect(url_for('index'))
 
@@ -483,7 +460,6 @@ def logout():
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     term = search_term
-    print ("term ", term)
     kind = search_kind
     conn = lookup.getConn(CONN)
     if (request.method == "POST") and not (kind == "author"):
@@ -497,9 +473,9 @@ def worksByTerm(search_kind, search_term):
     nm = "Tag" if (kind == "tag") else "Term"
     if not res:
         flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
+    # return "<p>{}</p>".format(str(res))
     return render_template('search.html', resKind=resKind, term=term, 
-                            res=res, warnings=lookup.getTags(conn, 'warnings'),
-                            page_title="Search")
+                            res=res, warnings=lookup.getTags(conn, 'warnings'))
 
 @app.route('/chapIndex/', methods=["POST"])
 def chapIndex():
@@ -514,10 +490,8 @@ def history():
         uid = session['uid']
         conn = lookup.getConn(CONN)
         hist = lookup.getHistory(conn, uid)
-        username = session['username'] if 'username' in session else ""
         return render_template('history.html',
-                                history=hist,
-                                page_title="{}'s History".format(username))
+                                history=hist)
     else:
         return redirect(url_for('index'))
 

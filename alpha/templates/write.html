@@ -3,24 +3,28 @@
 {% block content %}
 <body>
 
+    {% for i in allch %}
+        <p><a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}">Edit chapter {{i['cnum']}}</a></p>
+        {% if loop.last %}
+            <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><button class="btn btn-info">Add Chapter {{i['cnum']+1}}</button></a></li>
+        {% endif %}
+    {% endfor %}
+    <br><br>
+            
     <form action="" method="POST">
-        <textarea id="tinytext" name="write"></textarea>
-        <input type="submit" name="submit">
+
+        <label>Write Your Story
+            <textarea id="tinytext" name="write"></textarea></label>
+        <input type="submit" name="submit" value="submit">
     </form>
+    <br>
+    
 
-<ul>
-{% for i in allch %}
-    <a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}"><p>Edit chapter {{i['cnum']}}</p></a>
-    {% if loop.last %}
-    <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><p>Add Chapter {{i['cnum']+1}}</p></a>
-    {% endif %}
-{% endfor %}
-</ul>
+    <script>
+        story = `{{story|safe}}`
+    </script>
 
-<script>
-var story = "{{story|safe}}"
-</script>
-<script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
 
 </body>
 {% endblock %}

@@ -6,10 +6,10 @@ tinymce.init({
     width: 700, //px
     height: 600,
     element_format: 'html',
-    init_instance_callback : function(editor) {
-        editor.setContent(story)
-
+    init_instance_callback: function(editor) {
         var freeTiny = document.querySelector('.tox .tox-notification--in');
         freeTiny.style.display = 'none';
+        editor.setContent(story);
+        console.log(story);
     }
 });

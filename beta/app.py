@@ -348,81 +348,81 @@ def read(sid, cnum):
     conn = lookup.getConn(CONN)
     # print("sid: "+str(sid))
     # print("cnum: "+str(cnum))
-    try:
-        chapter = lookup.getChapter(conn, sid, cnum)
-        # print('Chapter dict:')
-        # print(chapter)
-        cid = chapter['cid']
-        # print(cid)
-        try:
-            uid = session['uid']
+    # try:
+    chapter = lookup.getChapter(conn, sid, cnum)
+    # print('Chapter dict:')
+    # print(chapter)
+    cid = chapter['cid']
+    # print(cid)
+    # try:
+    uid = session['uid']
 
-            #add to history
-            print(lookup.addToHistory(conn, uid, sid))
-            rating = lookup.getRating(conn, sid, uid)
-            if rating is not None:
-                rating = rating['rating']
-                avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
-            else:
-                avgRating = None
-            print(rating)
-            comments = lookup.getComments(conn, uid, cid)
-            
-            # print('Comments:')
-            # print(comments)
-            infile = open(chapter['filename'], 'r')
-            story = infile.read()
-            infile.close()
+    #add to history
+    print(lookup.addToHistory(conn, uid, sid))
+    rating = lookup.getRating(conn, sid, uid)
+    if rating is not None:
+        rating = rating['rating']
+        avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
+    else:
+        avgRating = None
+    print(rating)
+    comments = lookup.getComments(conn, uid, cid)
+    
+    # print('Comments:')
+    # print(comments)
+    infile = open(chapter['filename'], 'r')
+    story = infile.read()
+    infile.close()
 
-            allch = lookup.getChapters(conn,sid)
-            numChap = lookup.getNumChaps(conn, sid)['count(cid)']
-            # print(numChap)
-            work = lookup.getStory(conn, sid)
-            print(work)
-            if uid == work['uid']:
-                allComments = lookup.getAllComments(conn, cid)
-            else:
-                allComments = None
+    allch = lookup.getChapters(conn,sid)
+    numChap = lookup.getNumChaps(conn, sid)['count(cid)']
+    # print(numChap)
+    work = lookup.getStory(conn, sid)
+    print(work)
+    if uid == work['uid']:
+        allComments = lookup.getAllComments(conn, cid)
+    else:
+        allComments = None
 
-            if 'username' not in session:
-                return redirect(url_for('index'))
-            if session['username'] == work['username']:
-                return render_template('read.html', 
-                                        page_title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=True,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments,
-                                        old_rating=rating,
-                                        avgRating=avgRating)
-            else:
-                return render_template('read.html', 
-                                        page_title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=False,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments,
-                                        old_rating=rating,
-                                        avgRating=avgRating)
-        except Exception as err:
-            print(err)
-            return redirect( url_for('index') )
-    except Exception as err:
-        return redirect( url_for('notFound') )
+    if 'username' not in session:
+        return redirect(url_for('index'))
+    if session['username'] == work['username']:
+        return render_template('read.html', 
+                                page_title=work['title'], 
+                                story=story,
+                                chapter=chapter,
+                                author=work['username'],
+                                cnum=cnum,
+                                sid=sid,
+                                update=True,
+                                allch=allch,
+                                comments=comments,
+                                uid=uid,
+                                maxCh=numChap,
+                                allComments=allComments,
+                                old_rating=rating,
+                                avgRating=avgRating)
+    else:
+        return render_template('read.html', 
+                                page_title=work['title'], 
+                                story=story,
+                                chapter=chapter,
+                                author=work['username'],
+                                cnum=cnum,
+                                sid=sid,
+                                update=False,
+                                allch=allch,
+                                comments=comments,
+                                uid=uid,
+                                maxCh=numChap,
+                                allComments=allComments,
+                                old_rating=rating,
+                                avgRating=avgRating)
+    #     except Exception as err:
+    #         print(err)
+    #         return redirect( url_for('index') )
+    # except Exception as err:
+    #     return redirect( url_for('notFound') )
 
 @app.route('/404/')
 def notFound():
@@ -455,7 +455,7 @@ def recommendations():
 def addComment():
     conn = lookup.getConn(CONN)
     commentText = request.form["commentText"]
-    cid = request.form['cid']
+    cid = request.form['chapcid']
     # print(commentText)
     if 'uid' in session:
         uid = session['uid']
@@ -574,6 +574,22 @@ def history():
                                 page_title="{}'s History".format(username))
     else:
         return redirect(url_for('index'))
+
+@app.route('/markHelpful/', methods=["POST"])
+def markHelpful():
+    conn = lookup.getConn(CONN)
+    helpful = request.form.get('helpful')
+    print(helpful)
+    rid = request.form.get('rid')
+    print(rid)
+    # print("rating to add:")
+    # print(rating)
+    lookup.changeHelpful(conn, rid, helpful)
+    # avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
+    # print("average rating for sid " + str(sid))
+    # print(avgRating)
+    # lookup.updateAvgRating(conn, sid, avgRating)
+    return jsonify(helpful=helpful, rid=rid)
 
 if __name__ == '__main__':
 

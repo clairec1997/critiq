@@ -16,25 +16,7 @@
         <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked> {{tag['tname']}}</input>
         <br>
         {% endfor %}
-        {% for tag in otherTags %}
-        <input type="checkbox" name="pref[]" value="{{tag['tid']}}" > {{tag['tname']}}</input>
-        <br>
-        {% endfor %}
-    </label>
-    <br>
-    <input type="submit" name="submit-btn" value="Submit Changes" class="btn btn-secondary">
-    </form>
-</div>
-
-<div id=filtBox>
-    <form id="filts" method="POST" action="{{url_for('profile', username=username)}}">
-    <label id="warnings"><h6>NEVER Show Me Stories About...</h6>
-
-        {% for tag in warnings %}
-        <input type="checkbox" name="warning[]" value="{{tag['tid']}}" checked> {{tag['tname']}}</input>
-        <br>
-        {% endfor %}
-        {% for tag in prevW %}
+        {% for tag in allTags %}
         <input type="checkbox" name="pref[]" value="{{tag['tid']}}" > {{tag['tname']}}</input>
         <br>
         {% endfor %}

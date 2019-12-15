@@ -41,6 +41,14 @@
             <div class=comment>
                 <p><a href="{{url_for('profile', username=comment.commenter)}}">{{ comment.commenter}}</a></p>
                 <p>{{ comment.reviewText }}</p>
+                <form class="helpfulForm" method="POST"> <!-- action="{{url_for('markHelpful')}}"> -->
+                    <input class="helpfulRid" value={{comment.rid}} name="rid" type=hidden>
+
+                    <label id="helpful" class="helpful"><div class=labelInput><button class="btn btn-secondary">&#128077;</button></div>
+                        <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
+                    <label id="nothelpful" class="helpful"><div class=labelInput><button class="btn btn-secondary">&#128078;</button></div> 
+                        <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                </form>
             </div>
             <br>
         {% endfor %}
@@ -102,7 +110,7 @@
         <label>Add a comment on this chapter</label>
             <textarea name="commentText" rows="8" class="form-control"></textarea>
             <br>
-            <input value={{chapter.cid}} id="cid" name="cid" type=hidden>
+            <input value={{chapter.cid}} id="chapcid" name="chapcid" type=hidden>
             <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
     </form>
 
@@ -114,32 +122,28 @@
     $("#avgCol").hide()
     
     $("input[type=radio].ratingInput").hide()
+    $("input:radio.helpfulInput").hide()
     var progressive_on = true;
-    var RATEURL = "{{url_for('rateAjax')}}"    
+    var RATEURL = "{{url_for('rateAjax')}}"   
+    var HELPFULURL = "{{url_for('markHelpful')}}" 
 
     // $("input:radio.ratingInput").click(function() { 
-    $("#rateForm").on("click", "input:radio.ratingInput", function(event) {
-        // $(".rating").html(" &#9734;")
+        $("#rateForm").on("click", "input:radio.ratingInput", function(event) {
         console.log('adding rating with Ajax')
         $("#avgCol1").hide()
         //turn on ajax
         if (progressive_on) {
             rate = $(this).val();
             console.log(rate);
-            // $(this).closest("form").find("#rate" + rate).text(" &#9733;");
-            // console.log('looping')
             for (i = 1; i <= rate; i++) {
                 // console.log(i)
                 $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9733;');
             };
-            // console.log('looping 2')
             for (i = 5; i > rate; i--) {
                 // console.log(i)
                 $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9734;');
             };
-            // console.log('done looping')
             $("input:radio.ratingInput").hide()
-
             //update avg rating
             var sid = $(this).closest("form").find(".rateSid").val()
             var uid = $(this).closest("form").find(".rateUid").val()
@@ -150,12 +154,33 @@
         }
     });
 
+    $(".helpfulForm").on("click", "input:radio.helpfulInput", function(event) {
+        // $(".rating").html(" &#9734;")
+        console.log('adding rating with Ajax')
+        $("#avgCol1").hide()
+        //turn on ajax
+        if (progressive_on) {
+            rate = $(this).val();
+            console.log(rate);
+            // $("input:radio.helpfulInput").hide()
+
+            //update avg rating
+            var rid = $(this).closest("form").find(".helpfulRid").val()
+            console.log(rid)
+            $.post(RATEURL, {'helpful': helpful, 'rid': rid}, showHelpful)
+            
+        }
+    });
+
     function showAvgRating(obj) {
         console.log(obj)
         $('#avgCol').text('Average rating: ' + obj.avgRating + '/5')
         $('#avgCol').show()
     }
 
+    function showHelpful(obj) {
+        console.log(obj)
+    }
 
 </script>
 

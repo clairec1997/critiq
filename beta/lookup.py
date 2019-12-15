@@ -276,14 +276,6 @@ def getComments(conn, uid, cid):
     return curs.fetchall()
 
 
-def getAllComments(conn, cid):
-    curs = dbi.dictCursor(conn)
-    curs.execute('''select reviews.reviewText as reviewText, users.username as commenter 
-                    from reviews inner join reviewCredits using(rid)
-                    inner join users on reviews.commenter=users.uid
-                    where cid=%s
-                    ''', [cid])
-    return curs.fetchall()
 
 
 def calcAvgRating(conn, sid):
@@ -334,12 +326,25 @@ def getHistory(conn, uid):
                     [uid])
     return curs.fetchall()
     
-def getAllCommets(conn, cid):
+# def getAllCommets(conn, cid):
+#     curs = dbi.dictCursor(conn)
+#     curs.execute('''select reviews.reviewText as text, users.username as author, reviewCredits.cid as cid
+#                         from reviews inner join reviewCredits using (rid)
+#                         inner join users on reviews.commenter=users.uid where reviewCredits.cid=%s''', [cid])
+#     return curs.fetchall()
+
+def getAllComments(conn, cid):
     curs = dbi.dictCursor(conn)
-    curs.execute('''select reviews.reviewText as text, users.username as author, reviewCredits.cid as cid
-                        from reviews inner join reviewCredits using (rid)
-                        inner join users on reviews.commenter=users.uid where reviewCredits.cid=%s''', [cid])
+    curs.execute('''select reviews.reviewText as reviewText, reviews.rid as rid, users.username as commenter 
+                        from reviews inner join reviewCredits using(rid)
+                        inner join users on reviews.commenter=users.uid
+                        where cid=%s
+                        ''', [cid])
     return curs.fetchall()
+
+def changeHelpful(conn, rid, helpful):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''update reviews set ishelpful=%s where rid=%s''', [helpful, rid])
 
 def getWarnings(conn, uid):
     '''given uid, retrieves users prefs'''
