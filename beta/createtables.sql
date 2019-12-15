@@ -1,3 +1,4 @@
+drop table if exists bookmarks;
 drop table if exists history;
 drop table if exists ratings;
 drop table if exists prefs;
@@ -133,14 +134,32 @@ ENGINE = InnoDB;
 create table history (
     uid int not null,
     sid int not null,
+    cid int not null,
     visited datetime,
-    primary key (uid, sid),
+    primary key (uid, sid, cid),
     foreign key(uid) references users(uid)
         on update cascade
         on delete cascade,
     foreign key (sid) references works(sid)
         on update cascade
-        on delete cascade
+        on delete cascade,
+    foreign key (cid) references chapters(cid)
+        on update CASCADE
+        on delete cascade,
+)
+
+ENGINE = InnoDB;
+
+create table bookmarks (
+    uid int not null,
+    sid int not null, 
+    primary key (uid, sid),
+    foreign key(uid) references users(uid)
+        on update CASCADE
+        on delete cascade,
+    foreign key(sid) references works(sid)
+        on update CASCADE
+        on delete cascade,
 )
 
 ENGINE = InnoDB;
