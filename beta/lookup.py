@@ -313,16 +313,16 @@ def getNumChaps(conn, sid):
     curs.execute('''select count(cid) from chapters where sid=%s''', [sid])
     return curs.fetchone()
 
-def addToHistory(conn, uid, sid):
+def addToHistory(conn, uid, sid, cid):
     now = datetime.now()
     #frmat = now.strftime('%Y-%m-%d %H:%M:%S')
     curs = dbi.dictCursor(conn)
-    curs.execute('''insert into history values(%s, %s, %s) 
+    curs.execute('''insert into history values(%s, %s, %s, %s) 
                     on duplicate key update visited = %s''',
-                    [uid, sid, now, now])
+                    [uid, sid, cid, now, now])
 def getHistory(conn, uid):
     curs = dbi.dictCursor(conn)
-    curs.execute('''select sid, uid, title, updated, summary, 
+    curs.execute('''select sid, cid, uid, title, updated, summary, 
                     stars, count(sid), username, visited from  
                     (select sid, visited from history where uid = %s) as q1
                     left outer join works using(sid)
