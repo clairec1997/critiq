@@ -379,7 +379,7 @@ def removeBookmark(conn, sid, uid):
                     [sid, uid])
 
 def isBookmarked(conn, sid, uid):
-    curs = dbi.dictCursor(conn)
+    curs = dbi.cursor(conn)
     curs.execute('''select * from bookmarks 
                 where sid=%s and uid=%s''',
                 [sid,uid])

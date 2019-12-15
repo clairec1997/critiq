@@ -374,6 +374,8 @@ def read(sid, cnum):
             story = infile.read()
             infile.close()
 
+            isBookmarked = lookup.isBookmarked(conn,sid)
+
             allch = lookup.getChapters(conn,sid)
             numChap = lookup.getNumChaps(conn, sid)['count(cid)']
             # print(numChap)
@@ -383,41 +385,28 @@ def read(sid, cnum):
                 allComments = lookup.getAllComments(conn, cid)
             else:
                 allComments = None
-
             if 'username' not in session:
                 return redirect(url_for('index'))
             if session['username'] == work['username']:
-                return render_template('read.html', 
-                                        page_title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=True,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments,
-                                        old_rating=rating,
-                                        avgRating=avgRating)
+                isUpdate = True
             else:
-                return render_template('read.html', 
-                                        page_title=work['title'], 
-                                        story=story,
-                                        chapter=chapter,
-                                        author=work['username'],
-                                        cnum=cnum,
-                                        sid=sid,
-                                        update=False,
-                                        allch=allch,
-                                        comments=comments,
-                                        uid=uid,
-                                        maxCh=numChap,
-                                        allComments=allComments,
-                                        old_rating=rating,
-                                        avgRating=avgRating)
+                isUpdate = False
+            return render_template('read.html', 
+                                    page_title=work['title'], 
+                                    story=story,
+                                    chapter=chapter,
+                                    author=work['username'],
+                                    cnum=cnum,
+                                    isBookmark=isBookmarked,
+                                    sid=sid,
+                                    update=isUpdate,
+                                    allch=allch,
+                                    comments=comments,
+                                    uid=uid,
+                                    maxCh=numChap,
+                                    allComments=allComments,
+                                    old_rating=rating,
+                                    avgRating=avgRating)
         except Exception as err:
             print(err)
             return redirect( url_for('index') )
@@ -590,6 +579,12 @@ def markHelpful():
     # print(avgRating)
     # lookup.updateAvgRating(conn, sid, avgRating)
     return jsonify(helpful=helpful, rid=rid)
+
+@app.route('/addBookmark/', methods=["POST"])
+def addBookmark():
+    conn = lookup.getConn(CONN)
+
+    return redirect(request.referrer)
 
 if __name__ == '__main__':
 
