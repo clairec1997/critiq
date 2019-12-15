@@ -13,8 +13,8 @@ import bcrypt
 UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
-CONN = 'critiq_db'
-# CONN = 'ccannatt_db'
+# CONN = 'critiq_db'
+CONN = 'spulavar_db'
 
 lock = Lock()
 
