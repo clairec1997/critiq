@@ -365,3 +365,28 @@ def getRating(conn, sid, uid):
     curs = dbi.dictCursor(conn)
     curs.execute('''select rating from ratings where sid=%s and uid=%s''',[sid, uid])
     return curs.fetchone()
+
+def addBookmark(conn, sid, uid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''insert into bookmarks(sid, uid)
+                    values (%s,%s)''', 
+                    [sid, uid])
+
+def removeBookmark(conn, sid, uid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''delete from bookmarks
+                    where sid=%s and uid=%s''', 
+                    [sid, uid])
+
+def isBookmarked(conn, sid, uid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select * from bookmarks 
+                where sid=%s and uid=%s''',
+                [sid,uid])
+    return curs.fetchone()
+
+def getBookmarks(conn, uid):
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select * from bookmarks
+                    where uid=%s''', [uid])
+    return curs.fetchall()
