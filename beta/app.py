@@ -309,24 +309,26 @@ def update(sid, cnum):
                     infile = open(chapter['filename'], 'r')
                     story = infile.read()
                     infile.close()
+                    print(story)
                 allch = lookup.getChapters(conn, sid)
                 title = lookup.getTitle(conn, sid)
                 return render_template('write.html', sid=sid, cnum=cnum, story=story, 
                                         allch=allch, page_title="Update '{}'".format(title['title']))
+
             if request.method=="POST":
                 sometext = request.form['write']
                 somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
-                    tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span'], 
+                    tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span', 'pre'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
+                print(somehtml)
 
                 dirname = os.path.dirname(__file__)
                 relative = 'uploaded/'+'sid'+str(sid)+'cnum'+str(cnum)+'.html'
                 filename = os.path.join(dirname, relative)
 
-                outfile = open(filename, 'w')
-                outfile.write(somehtml)
-                outfile.close()
+                with open(filename, 'w') as outfile:
+                    outfile.write(somehtml)
                 
                 chapter = lookup.getChapter(conn,sid,cnum)
 
@@ -374,7 +376,7 @@ def read(sid, cnum):
             story = infile.read()
             infile.close()
 
-            isBookmarked = lookup.isBookmarked(conn,sid)
+            isBookmarked = lookup.isBookmarked(conn,sid,uid)
 
             allch = lookup.getChapters(conn,sid)
             numChap = lookup.getNumChaps(conn, sid)['count(cid)']
@@ -419,7 +421,22 @@ def notFound():
 
 @app.route('/bookmarks/')
 def bookmarks():
-    return render_template('main.html',page_title='Bookmarks')
+    if 'uid' in session:
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        username = session['username'] if 'username' in session else ''
+
+        books = lookup.getBookmarks(conn, uid)
+              
+        if not books:
+            flash("No bookmarked works were found")
+        
+        return render_template('',
+                                res=books,
+                                page_title="{}'s Bookmarks".format(username))
+    else:
+        flash("Please log in")
+        return redirect(url_for('index'))
 
 @app.route('/recommendations/', methods=["GET", "POST"])
 def recommendations():
