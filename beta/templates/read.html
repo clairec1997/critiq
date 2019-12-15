@@ -156,15 +156,15 @@
 
     $(".helpfulForm").on("click", "input:radio.helpfulInput", function(event) {
         // $(".rating").html(" &#9734;")
-        console.log('adding rating with Ajax')
-        $("#avgCol1").hide()
+        console.log('mark helpful with Ajax')
         //turn on ajax
         if (progressive_on) {
             rate = $(this).val();
             console.log(rate);
+            $(this).addClass("btn-info")
+            $(this).removeClass("btn-secondary")
             // $("input:radio.helpfulInput").hide()
 
-            //update avg rating
             var rid = $(this).closest("form").find(".helpfulRid").val()
             console.log(rid)
             $.post(RATEURL, {'helpful': helpful, 'rid': rid}, showHelpful)
