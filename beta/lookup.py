@@ -147,18 +147,20 @@ def getChapter(conn, sid, cnum):
                     works.wip as wip,
                     works.title as title, 
                     chapters.filename as filename,
-                    chapters.cid as cid 
+                    chapters.cid as cid
                     from works inner join chapters using (sid)
                     where sid=%s and cnum=%s
                     ''', [sid, cnum])
     return curs.fetchone()
 
-def setChapter(conn, sid, cnum, filename):
+def setChapter(conn, sid, cnum, cid, filename):
     '''Given sid, cnum, filename, sets the chapter'''
     curs = dbi.cursor(conn)
-    curs.execute('''insert into chapters(sid, cnum, filename)
-                values (%s, %s, %s)''',
-                [sid, cnum, filename])
+    curs.execute('''insert into chapters(sid, cnum, cid, filename)
+                values (%s, %s, %s, %s)
+                on duplicate key update
+                filename=%s''',
+                [sid, cnum, cid, filename, filename])
 
 def getAuthor(conn, sid):
     '''given an sid, gets the username'''
@@ -388,5 +390,6 @@ def isBookmarked(conn, sid, uid):
 def getBookmarks(conn, uid):
     curs = dbi.dictCursor(conn)
     curs.execute('''select * from bookmarks
+                    inner join works using (sid)
                     where uid=%s''', [uid])
     return curs.fetchall()

@@ -8,7 +8,6 @@ tinymce.init({
     element_format: 'html',
     init_instance_callback : function(editor) {
         editor.setContent(story)
-
         var freeTiny = document.querySelector('.tox .tox-notification--in');
         freeTiny.style.display = 'none';
     }

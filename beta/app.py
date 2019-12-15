@@ -306,10 +306,10 @@ def update(sid, cnum):
                 chapter = lookup.getChapter(conn, sid, cnum)
                 story = ""
                 if chapter:
-                    infile = open(chapter['filename'], 'r')
-                    story = infile.read()
-                    infile.close()
-                    print(story)
+                    with open(chapter['filename'], 'r') as infile:
+                        print("From db: "+chapter['filename'])
+                        story = infile.read()
+                        print("Read for Update" + story)
                 allch = lookup.getChapters(conn, sid)
                 title = lookup.getTitle(conn, sid)
                 return render_template('write.html', sid=sid, cnum=cnum, story=story, 
@@ -321,19 +321,21 @@ def update(sid, cnum):
                     tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span', 'pre'], 
                     attributes=['style'],
                     styles=['text-decoration', 'text-align'])
-                print(somehtml)
 
                 dirname = os.path.dirname(__file__)
                 relative = 'uploaded/'+'sid'+str(sid)+'cnum'+str(cnum)+'.html'
                 filename = os.path.join(dirname, relative)
+                print(filename)
 
                 with open(filename, 'w') as outfile:
                     outfile.write(somehtml)
+                    print("Where it's written:" + filename)
+                    print("Write for Update" + somehtml)
                 
                 chapter = lookup.getChapter(conn,sid,cnum)
+                cid = chapter['cid']
 
-                if not chapter:
-                    lookup.setChapter(conn, sid, cnum, filename)
+                lookup.setChapter(conn, sid, cnum, cid, filename)
                 print("ok i got this")
                 return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
@@ -372,9 +374,12 @@ def read(sid, cnum):
             
             # print('Comments:')
             # print(comments)
-            infile = open(chapter['filename'], 'r')
-            story = infile.read()
-            infile.close()
+
+            story = ""
+
+            with open(chapter['filename'], 'r') as infile:
+                story = infile.read()
+                print("Read for Reading:" + story)
 
             isBookmarked = lookup.isBookmarked(conn,sid,uid)
 
