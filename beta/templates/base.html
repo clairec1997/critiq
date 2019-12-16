@@ -8,8 +8,8 @@
     <meta name="description" content="A site for posting and critiquing creative writing.">
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';" > -->
 
-    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
     <link rel="stylesheet" href="{{url_for('static', filename = 'style.css')}}">
     <link rel="icon" href="{{url_for('static', filename = 'images/critiq_icon.png')}}">
     <title>{{page_title}}</title>
@@ -71,7 +71,7 @@
                       <a class="dropdown-item" href="{{url_for('profile', username=session['username'])}}">My Profile</a>
                       <a class="dropdown-item" href="{{url_for('history')}}">My History</a>
                       <a class="dropdown-item" href="{{url_for('manage')}}">Manage My Stories</a>
-                      <!-- <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a> -->
+                      <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
                       <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>
                       <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
                       

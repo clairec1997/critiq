@@ -436,7 +436,7 @@ def bookmarks():
         if not books:
             flash("No bookmarked works were found")
         
-        return render_template('',
+        return render_template('bookmarks.html',
                                 res=books,
                                 page_title="{}'s Bookmarks".format(username))
     else:

@@ -389,7 +389,8 @@ def isBookmarked(conn, sid, uid):
 
 def getBookmarks(conn, uid):
     curs = dbi.dictCursor(conn)
-    curs.execute('''select * from bookmarks
+    curs.execute('''select sid, username, title, summary from bookmarks
                     inner join works using (sid)
-                    where uid=%s''', [uid])
+                    inner join users on (works.uid = users.uid)
+                    where bookmarks.uid=%s''', [uid])
     return curs.fetchall()

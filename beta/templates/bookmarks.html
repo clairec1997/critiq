@@ -14,18 +14,19 @@
             <thead>
             <tr>
                 <th>Title</th>
+                <th>Summary</th>
                 <th>Author</th>
-                <th># of Chapters</th>
             </tr>
         </thead>
         {% if res %}
 
-        {%for result in res %}
+        {% for result in res %}
             <tr work-sid="{{result['sid']}}">
                 <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
+                <td class="title">{{result['summary']}}</td>
                 <td class="author"><a href="{{url_for('profile', username=result['username'])}}">{{result['username']}}</a></td>
             </tr>          
-        {%endfor%}
+        {% endfor %}
 
         {% else %}
         <tr><td>No results found</td></tr>
