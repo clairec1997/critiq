@@ -284,8 +284,7 @@ def update(sid, cnum):
                 
                 chapter = lookup.getChapter(conn,sid,cnum)
 
-                if not chapter:
-                    lookup.setChapter(conn, sid, cnum, filename)
+                lookup.setChapter(conn, sid, cnum, filename)
 
                 return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
