@@ -51,7 +51,7 @@ def updateProfile(conn, uid, dob):
                     where uid=%s''', [dob, uid])
 
 def searchWorks(conn, kind, searchterm, filters):
-    '''finds works with tseleitle including searchterm or tag = searchterm 
+    '''finds works with the title including searchterm or tag = searchterm 
         takes chosen filters into acct'''
     curs = dbi.dictCursor(conn)
 
@@ -224,6 +224,7 @@ def getPrefs(conn, uid, wantsWarnings):
     return [tag['tid'] for tag in curs.fetchall()]
     
 def updatePrefs(conn, uid, prefs, isWarnings):
+    '''updates user preferences'''
     curs = dbi.dictCursor(conn)
     curs.execute('''delete from prefs where uid=%s and isWarning=%s''',
                 [uid, isWarnings])
@@ -233,39 +234,40 @@ def updatePrefs(conn, uid, prefs, isWarnings):
     # return getPrefs(conn, uid)
 
 def getRecs(conn, uid, filters):
+    '''gets recommended stories'''
     curs = dbi.dictCursor(conn)
-    tags = getPrefs(conn, uid, False)
-    if tags:
+    currentPrefs = getPrefs(conn, uid, False)
+    if currentPrefs:
         isFilters = (" where sid not in (select sid from taglink where tid in %s) " 
                     if filters else "")
+
         curs.execute('''select * from (select sid, uid, title, updated, summary, 
-                    stars, avgRating, count(sid), username from 
+                        stars, avgRating, count(sid), username from 
                         (select sid from taglink where tid in %s group by sid) as q1 
-                    left outer join works using(sid) 
-                    left outer join 
+                        left outer join works using(sid) 
+                        left outer join 
                         (select uid, username from users) as q2 
-                    using (uid) 
-                    left outer join chapters using(sid) group by sid) as q3 ''' 
-                    + isFilters + 
-                    '''order by avgRating desc''', 
-                    ([tags, filters] if filters else [tags]))
+                        using (uid) 
+                        left outer join chapters using(sid) group by sid) as q3 ''' 
+                        + isFilters + 
+                        '''order by avgRating desc''', 
+                        ([currentPrefs, filters] if filters else [currentPrefs]))
         res = curs.fetchall()
         return res
     else:
-        return {}
+        return None
                 
 
 def getComments(conn, uid, cid):
+    '''gets comments for the chapter with a certain commenter'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select reviewText from reviews inner join reviewCredits using(rid)
                     where commenter=%s and cid=%s
                     ''', [uid, cid])
     return curs.fetchall()
 
-
-
-
 def calcAvgRating(conn, sid):
+    '''calculates the average rating of a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select avg(rating) from ratings
                         inner join works using(sid)
@@ -273,11 +275,13 @@ def calcAvgRating(conn, sid):
     return curs.fetchone()
 
 def updateAvgRating(conn, sid, avg):
+    '''updates the average rating for a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''update works set avgRating=%s 
                     where sid=%s''', [avg, sid])
 
 def addRating(conn, uid, sid, rating):
+    '''adds a rating to a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select * from ratings where sid=%s and uid=%s''', [sid, uid])
     if curs.fetchone() is not None:
@@ -288,18 +292,22 @@ def addRating(conn, uid, sid, rating):
                         values(%s, %s, %s)''', [uid, sid, rating])
 
 def getNumChaps(conn, sid):
+    '''returns the number of chapters for a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select count(cid) from chapters where sid=%s''', [sid])
     return curs.fetchone()
 
 def addToHistory(conn, uid, sid, cid):
+    '''adds a chapter to history'''
     now = datetime.now()
     #frmat = now.strftime('%Y-%m-%d %H:%M:%S')
     curs = dbi.dictCursor(conn)
     curs.execute('''insert into history values(%s, %s, %s, %s) 
                     on duplicate key update visited = %s''',
                     [uid, sid, cid, now, now])
+
 def getHistory(conn, uid):
+    '''gets a user's history'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select sid, cid, uid, title, updated, summary, 
                     stars, count(sid), username, visited from  
@@ -321,6 +329,7 @@ def getHistory(conn, uid):
 #     return curs.fetchall()
 
 def getAllComments(conn, cid):
+    '''gets all comments for a chapter'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select reviews.reviewText as reviewText, reviews.rid as rid, 
                         users.username as commenter, reviews.ishelpful as ishelpful
@@ -331,6 +340,7 @@ def getAllComments(conn, cid):
     return curs.fetchall()
 
 def changeHelpful(conn, rid, helpful):
+    '''sets a review as helpful or not helpful'''
     curs = dbi.dictCursor(conn)
     curs.execute('''update reviews set ishelpful=%s where rid=%s''', [helpful, rid])
 
@@ -350,23 +360,27 @@ def getTitle(conn, sid):
     return curs.fetchone()
 
 def getRating(conn, sid, uid):
+    '''gets a rating for a story'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select rating from ratings where sid=%s and uid=%s''',[sid, uid])
     return curs.fetchone()
 
 def addBookmark(conn, sid, uid):
+    '''adds a bookmark'''
     curs = dbi.dictCursor(conn)
     curs.execute('''insert into bookmarks(sid, uid)
                     values (%s,%s)''', 
                     [sid, uid])
 
 def removeBookmark(conn, sid, uid):
+    '''removes a bookmark'''
     curs = dbi.dictCursor(conn)
     curs.execute('''delete from bookmarks
                     where sid=%s and uid=%s''', 
                     [sid, uid])
 
 def isBookmarked(conn, sid, uid):
+    '''checks if a work is bookmarked'''
     curs = dbi.cursor(conn)
     curs.execute('''select * from bookmarks 
                 where sid=%s and uid=%s''',
@@ -374,6 +388,7 @@ def isBookmarked(conn, sid, uid):
     return curs.fetchone()
 
 def getBookmarks(conn, uid):
+    '''gets a list of bookmarks'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select sid, username, title, summary from bookmarks
                     inner join works using (sid)
