@@ -6,18 +6,18 @@
     <h1>Add a Story</h1>
 
     <div class="form-group">
-        <label for="titleid"><b>Title: </b></label>
+        <label for="titleid"><h6>Title: </h6></label>
         <input type="text" name="title" id ="titleid" class="form-control">
     </div>
     
     <div class="form-group">
-        <label for="summaryid"><b>Summary: </b></label>
+        <label for="summaryid"><h6>Summary: </h6></label>
         <textarea name="summary" id="summaryid" class="form-control" rows=8></textarea>
     </label> 
     </div>
 
     <div class="form-group">
-    <label><b>Genres:</b><br>
+    <label><h6>Genres:</h6><br>
         {% for g in genre %}
         <div class="form-check form-check-inline">
             <label> {{ g['tname'] }}
@@ -29,7 +29,7 @@
     </div>
 
     <div class="form-group">
-    <label><b>Audience: </b><br>
+    <label><h6>Audience: </h6><br>
         {% for a in audience %}
         <div class="form-check form-check-inline">
             <label> {{ a['tname'] }}
@@ -41,7 +41,7 @@
     </div>
 
     <div class="form-group">
-    <label><b>Warnings: </b><br>
+    <label><h6>Warnings: </h6><br>
         {% for w in warnings %}
         <div class="form-check form-check-inline">
         <label> {{ w['tname'] }}
@@ -53,7 +53,7 @@
     </div>
 
     <div class="form-group">
-    <label><b>Status: </b><br>
+    <label><h6>Status: </h6><br>
         {% for i in isFin %}
         <div class="form-check form-check-inline">
         <label> {{ i['tname'] }}
