@@ -242,9 +242,7 @@ def add():
             status = request.form['isFin']
         
             conn = lookup.getConn(CONN)
-            lock.acquire()
             sid = lookup.addStory(conn, uid, title, summary, status)[0]
-            lock.release()
             lookup.addTags(conn, sid, genre, warnings, audience, status)
 
             return redirect(url_for('update', sid=sid))
@@ -292,7 +290,11 @@ def update(sid, cnum):
                     print("Write for Update" + somehtml)
                 
                 chapter = lookup.getChapter(conn,sid,cnum)
-                cid = chapter['cid']
+
+                if chapter:
+                    cid = chapter['cid']
+                if not chapter:
+                    cid = None
 
                 lookup.setChapter(conn, sid, cnum, cid, filename)
                 print("ok i got this")
@@ -432,9 +434,7 @@ def addComment():
 
     if 'uid' in session:
         uid = session['uid']
-        lock.acquire()
         lookup.addComment(conn, commentText, uid, cid)
-        lock.release()
         flash('Comment submitted!')
         return redirect(request.referrer)
     else:

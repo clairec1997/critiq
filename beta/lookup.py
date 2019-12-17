@@ -19,9 +19,11 @@ def getConn(db):
 def insertPass(conn, username, hashed_str):
     '''inserts user into database when they make an account'''
     curs = dbi.cursor(conn)
+    curs.execute('lock tables users')
     curs.execute('''INSERT INTO users(uid,username,passhash)
                             VALUES(null,%s,%s)''',
                          [username, hashed_str])
+    curs.execute('unlock tables')
 
 def getUIDFirst(conn):
     '''gets last inserted uid'''
@@ -50,9 +52,11 @@ def getLogin(conn, username):
 
 def updateProfile(conn, uid, dob):
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables users write')
     curs.execute('''update users
                     set dob=%s
                     where uid=%s''', [dob, uid])
+    curs.execute('unlock tables')
 
 def getStories(conn, uid):
     '''Returns all works associated with an account'''
@@ -73,11 +77,13 @@ def getPrefs(conn, uid, wantsWarnings):
 def updatePrefs(conn, uid, prefs, isWarnings):
     '''updates user preferences'''
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables prefs write')
     curs.execute('''delete from prefs where uid=%s and isWarning=%s''',
                 [uid, isWarnings])
     for pref in prefs:
         curs.execute('''insert into prefs values(%s, %s, %s)''',
                     [uid, pref, isWarnings])
+    curs.execute('unlock tables')
     # return getPrefs(conn, uid)
 
 # --------------------------- Searching and Recommended Works
@@ -234,7 +240,16 @@ def getTitle(conn, sid):
 def setChapter(conn, sid, cnum, cid, filename):
     '''Given sid, cnum, filename, sets the chapter'''
     curs = dbi.cursor(conn)
+    curs.execute('lock tables chapters write')
 
+    isTrans = False
+
+    if cid is None:
+        isTrans = True
+        curs.execute('start transaction')
+        curs.execute('select max(cid) from chapters')
+        cid = curs.fetchone()[0] + 1
+    
     curs.execute('''insert into chapters(sid, cnum, cid, filename)
                 values (%s, %s, %s, %s)
                 on duplicate key update
@@ -242,20 +257,27 @@ def setChapter(conn, sid, cnum, cid, filename):
                 [sid, cnum, cid, filename, filename])
     
     lastUpdated(conn, sid)
+    if isTrans == True:
+        curs.execute('commit')
+    curs.execute('unlock tables')
 
 def lastUpdated(conn, sid):
     '''changes updated to current date whenever a work is updated '''
     curs = dbi.cursor(conn)
+    curs.execute('lock tables works write')
     curs.execute('''update works set updated = %s where sid = %s''',
                 [datetime.now(), sid])
+    curs.execute('unlock tables')
 
 def addStory(conn, uid, title, summary, isFin):
     '''given a uid, title, summary, adds the story'''
     curs = dbi.cursor(conn)
+    curs.execute('lock tables works write')
     curs.execute('''insert into works(uid, title, updated, summary, wip, avgRating)
                     values (%s, %s, %s, %s, %s, 0)''', 
                     [uid, title, datetime.now(), summary, isFin])
     curs.execute('select last_insert_id()')
+    curs.execute('unlock tables')
     return curs.fetchone()
 
 # def getTagsAjax(conn):
@@ -267,10 +289,12 @@ def addStory(conn, uid, title, summary, isFin):
 def addTags(conn, sid, genre, warnings, audience, isFin):
     '''adds tags to a story'''
     curs = dbi.cursor(conn)
+    curs.execute('lock tables taglink write')
     tagslist = [*genre, *warnings, *audience, *isFin]
     for i in tagslist:
         curs.execute('''insert into taglink(tid, sid)
         values (%s, %s)''', [i, sid])
+    curs.execute('unlock tables')
 
 # ------------------------- Comments
 
@@ -279,11 +303,13 @@ def addComment(conn, commentText, uid, cid):
     curs = dbi.cursor(conn)
     # print(uid)
     # print(cid)
+    curs.execute('lock tables reviews write, reviewCredits write')
     curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
     curs.execute('select LAST_INSERT_ID()')
     row = curs.fetchone()
     rid = row[0]
     curs.execute('''insert into reviewCredits values(%s, %s)''', [rid, cid])
+    curs.execute('unlock tables')
 
 def getComments(conn, uid, cid):
     '''gets comments for the chapter with a certain commenter'''
@@ -304,12 +330,15 @@ def calcAvgRating(conn, sid):
 def updateAvgRating(conn, sid, avg):
     '''updates the average rating for a story'''
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables works write')
     curs.execute('''update works set avgRating=%s 
                     where sid=%s''', [avg, sid])
+    curs.execute('unlock tables')
 
 def addRating(conn, uid, sid, rating):
     '''adds a rating to a story'''
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables ratings write')
     curs.execute('''select * from ratings where sid=%s and uid=%s''', [sid, uid])
     if curs.fetchone() is not None:
         curs.execute('''update ratings set rating=%s 
@@ -317,6 +346,7 @@ def addRating(conn, uid, sid, rating):
     else:
         curs.execute('''insert into ratings(uid, sid, rating) 
                         values(%s, %s, %s)''', [uid, sid, rating])
+    curs.execute('unlock tables')
 
 def getAllComments(conn, cid):
     '''gets all comments for a chapter'''
@@ -332,7 +362,9 @@ def getAllComments(conn, cid):
 def changeHelpful(conn, rid, helpful):
     '''sets a review as helpful or not helpful'''
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables reviews write')
     curs.execute('''update reviews set ishelpful=%s where rid=%s''', [helpful, rid])
+    curs.execute('unlock tables')
 
 def getRating(conn, sid, uid):
     '''gets a rating for a story'''
@@ -347,9 +379,11 @@ def addToHistory(conn, uid, sid, cid):
     now = datetime.now()
     #frmat = now.strftime('%Y-%m-%d %H:%M:%S')
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables history write')
     curs.execute('''insert into history values(%s, %s, %s, %s) 
                     on duplicate key update visited = %s''',
                     [uid, sid, cid, now, now])
+    curs.execute('unlock tables')
 
 def getHistory(conn, uid):
     '''gets a user's history'''
@@ -371,16 +405,20 @@ def getHistory(conn, uid):
 def addBookmark(conn, sid, uid):
     '''adds a bookmark'''
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables bookmarks write')
     curs.execute('''insert into bookmarks(sid, uid)
                     values (%s,%s)''', 
                     [sid, uid])
+    curs.execute('unlock tables')
 
 def removeBookmark(conn, sid, uid):
     '''removes a bookmark'''
     curs = dbi.dictCursor(conn)
+    curs.execute('lock tables bookmarks write')
     curs.execute('''delete from bookmarks
                     where sid=%s and uid=%s''', 
                     [sid, uid])
+    curs.execute('unlock tables')
 
 def isBookmarked(conn, sid, uid):
     '''checks if a work is bookmarked'''
