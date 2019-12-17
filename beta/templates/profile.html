@@ -13,19 +13,19 @@
         <div class="form-group">
         <h6>Include: </h6>
 
-            {% for tag in prefs %}
-            <div class="form-check form-check-inline">
-                <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
-                <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked id="tag{{tag['tid']}}">
-            </div>
-            {% endfor %}
-        
-            {% for tag in otherTags %}
-            <div class="form-check form-check-inline">
-                <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
-                <input type="checkbox" name="pref[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}">
-            </div>
-            {% endfor %}
+        {% for tag, checked in prefs %}
+            {% if checked %}     
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked id="tag{{tag['tid']}}">
+                </div>
+            {% else %}
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}">
+                </div>
+            {% endif %}
+        {% endfor %}
         </div>
         
     <input type="submit" name="submit-btn" value="Update Preferences" class="btn btn-secondary">
@@ -35,18 +35,18 @@
         <div class="form-group">
         <h6>Exclude: </h6>
 
-        {% for tag in warnings %}
-        <div class="form-check form-check-inline">
-            <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
-            <input type="checkbox" name="warning[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}" checked>
-        </div>
-        {% endfor %}
-
-        {% for tag in otherWarns %}
-        <div class="form-check form-check-inline">
-            <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
-            <input type="checkbox" name="warning[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}">
-        </div>        
+        {% for tag, checked in warnings %}
+            {% if checked %}
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="warning[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}" checked>
+                </div>
+            {% else %}
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="warning[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}">
+                </div>   
+            {% endif %}     
         {% endfor %}
     </div>
     <input type="submit" name="submit-btn" value="Exclude Content" class="btn btn-secondary">

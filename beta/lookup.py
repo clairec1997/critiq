@@ -74,26 +74,26 @@ def searchWorks(conn, kind, searchterm, filters):
                     (select sid, tname as audience from (select * from tags 
                     where ttype='audience') as q4
                     left outer join taglink using(tid)) as q5
-                    using(sid)''' + dofilter, 
+                    using(sid) ''' + dofilter, 
                 params)
     else:
         curs.execute('''select * from (select sid, uid, title, updated, 
                         summary, stars, wip, avgRating, count(sid) from 
                         (select tid from tags where tname = %s) as q1 
                         left outer join taglink using(tid) 
-                        left outer join works using(sid)
-                        left outer join chapters using(sid) group by sid) as q3
-                        left outer join (select uid, username from users) as q4
-                        using(uid) left outer join
+                        left outer join works using(sid) 
+                        left outer join chapters using(sid) group by sid) as q3 
+                        left outer join (select uid, username from users) as q4 
+                        using(uid) left outer join 
                         (select sid, tname as audience from (select * from tags 
-                        where ttype='audience') as q4
-                        left outer join taglink using(tid)) as q5''' + dofilter, 
+                        where ttype='audience') as q4 
+                        left outer join taglink using(tid)) as q5 using(sid) ''' + dofilter, 
                         params)
             
     return curs.fetchall()
 
 def searchAuthors(conn, author):
-    '''finds authorsmathing name'''
+    '''finds authors matching name'''
     curs = dbi.dictCursor(conn)
     curs.execute('''select uid, username from users where 
                  username like %s''', 

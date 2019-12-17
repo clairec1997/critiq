@@ -106,7 +106,8 @@ a:hover {
     padding-top: 10px;
 }
 .container {
-    max-width: 95%;
+    max-width: 95%; 
+    min-width: fit-content; 
 }
 
 .tagbox {
@@ -115,18 +116,19 @@ a:hover {
     border-radius: 5px;
 }
 .filter-col {
-    display: inline;
-    max-height: fit-content;
+    display: flex;
 }
 
 .filter-row {
-    display: block;
+    display: flex;
+    flex-direction: column;
     margin-top: 10px;
     margin-bottom: 10px;
 }
 
 .filter-box {
     margin:10px;
+    display: inline-block;
 }
 
 #searchLabel {

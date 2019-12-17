@@ -133,81 +133,63 @@ def login():
 @app.route('/profile/<username>', methods = ["GET", "POST"]) #allow everyone to access all profiles, only let logged in users change own data
 def profile(username):
     conn = lookup.getConn(CONN)
-    # try:
-    if request.method == "POST":
-        if 'uid' in session:
-            uid = session['uid']
+    try:
+        if request.method == "POST":
+            # if either prefs or warnings were updated
+            if 'uid' in session:
+                uid = session['uid']
 
-            if request.form.get('submit-btn') == "Update Preferences":
-                lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'), False)
-            else:
-                lookup.updatePrefs(conn, uid, request.form.getlist('warning[]'), True)
-                
-                session['filters'] = lookup.getPrefs(conn, uid, True)
-                
+                if request.form.get('submit-btn') == "Update Preferences":
+                    lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'), False)
+                else:
+                    lookup.updatePrefs(conn, uid, request.form.getlist('warning[]'), True)
+                    
+                    session['filters'] = lookup.getPrefs(conn, uid, True)                
 
-                print ("{}".format(str(session)))
-                
+                flash('Your preferences have been updated!')      
+        
+        # don't trust the URL; it's only there for decoration
+        if 'username' in session:
+            currentUsername = session['username']
+            uid = lookup.getUID(conn, username)
+            
+            # retrieve user's current prefs and content filters
+            prefs = lookup.getPrefs(conn, uid, False)
+            warns = lookup.getPrefs(conn, uid, True)
 
+            # get all genre tags and warnings
+            allTags = lookup.getTags(conn, 'genre')
 
-            flash('Your preferences have been updated!')      
-    
-    # don't trust the URL; it's only there for decoration
-    if 'username' in session:
-        currentUsername = session['username']
-        uid = lookup.getUID(conn, username)
-        prefs = lookup.getPrefs(conn, uid, False)
-        warns = lookup.getPrefs(conn, uid, True)
+            allWarns = lookup.getTags(conn, 'warnings')
 
-        allTags = lookup.getTags(conn, 'genre')
-        prefTags = [tag for tag in allTags if tag['tid'] in prefs]
-        otherTags = [tag for tag in allTags if tag['tid'] not in prefs]
+            # default values if profile does not already have any prefs or content filters 
+            prefTags = [(tag, False) for tag in allTags]
+            warnTags = [(tag, False) for tag in allWarns]
 
-        allWarnings = lookup.getTags(conn, 'warnings')
-        warnTags = [tag for tag in allWarnings if tag['tid'] in warns]
-        otherWarns = [tag for tag in allWarnings
-                        if tag['tid'] not in warns]
+            # set up current prefs and content filters for auto-population
+            if prefs: 
+                prefTags = ([((tag, True) if tag['tid'] in prefs else (tag, False))
+                            for tag in allTags])
 
-        stories = lookup.getStories(conn, uid)
-        if prefs and warns:
+            if warns:
+                warnTags = ([((tag, True) if tag['tid'] in warns else (tag, False))
+                            for tag in allWarns])
+            
+
+            stories = lookup.getStories(conn, uid)
+            
             return render_template('profile.html',
                                 page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs=prefTags,
-                                otherTags=otherTags, warnings=warnTags,
-                                otherWarns=otherWarns, stories=stories, 
-                                currentUsername=currentUsername
-                                )
-        elif prefs:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs=prefTags,
-                                otherTags=otherTags, warnings=[],
-                                otherWarns=otherWarns, stories=stories, 
-                                currentUsername=currentUsername
-                                )
-        elif warns:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs=[],
-                                otherTags=otherTags, warnings=warns,
-                                otherWarns=otherWarns, stories=stories, 
+                                username=username, uid=uid, prefs=prefTags, 
+                                warnings=warnTags, stories=stories, 
                                 currentUsername=currentUsername
                                 )
         else:
-            return render_template('profile.html',
-                                page_title="{}'s Profile".format(username),
-                                username=username, uid=uid, prefs=[],
-                                otherTags=otherTags, warnings=[],
-                                otherWarns=otherWarns, stories=stories, 
-                                currentUsername=currentUsername
-                                )
-
-    else:
-        flash('You are not logged in. Please login or join')
+            flash('You are not logged in. Please login or join')
+            return redirect( url_for('index') )
+    except Exception as err:
+        flash('Some kind of error '+str(err))
         return redirect( url_for('index') )
-    # except Exception as err:
-    #     flash('Some kind of error '+str(err))
-    #     return redirect( url_for('index') )
 
 @app.route('/updateProfile/', methods=["POST"])
 def updateProfile():
@@ -513,6 +495,7 @@ def worksByTerm(search_kind, search_term):
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term, set(filters + exclude))
     )
+    print (str(res))
 
     if not kind == "author":
         print("pre everything\n", str(res))

@@ -9,11 +9,11 @@
     <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';" > -->
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
     <link rel="stylesheet" href="{{url_for('static', filename = 'style.css')}}">
     <link rel="icon" href="{{url_for('static', filename = 'images/critiq_icon.png')}}">
-    <title>{{page_title}}</title>
     {% block head_stuff %} {% endblock %}
+    <title>{{page_title}}</title>
+    
 </head>
 <body>
 
@@ -37,8 +37,7 @@
                 <form id="search-form" method="POST" action="{{url_for('index')}}" class="form-inline my-2 my-lg-0">
 		              <!-- <fieldset> -->
                 <div class="inline"><label id="searchlabel">
-                    Search For: 
-                    <div class="inline"><input id="term" name="search_term" value="" class="form-control"></div>
+                    Search For: <div class="inline"><input id="term" name="search_term" value="" class="form-control"></div>
                   </label></div>
                   <div class="inline"><label id="selTag">
                     Select Desired Tag: 
