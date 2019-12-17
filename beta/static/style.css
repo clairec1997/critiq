@@ -54,7 +54,7 @@ a {
 a:hover {
     color: rgb(0, 65, 0);
 }
-#prefsBox {
+.prefsBox {
     background-color: #EEEEEE;
     padding: 10px;
 }
@@ -62,10 +62,6 @@ a:hover {
 .managestory {
     background-color: #EEEEEE;
     padding: 10px;
-}
-
-#tags {
-
 }
 
 .btn-secondary {

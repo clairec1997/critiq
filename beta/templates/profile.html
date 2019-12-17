@@ -6,9 +6,13 @@
 
 {% if currentUsername == username %}
 <br>
-<h5>My Preferences</h5> 
 
-<div id=prefsBox>
+<button class="btn btn-info" type="button" data-toggle="collapse" data-target="#prefcollapse" aria-expanded="false" aria-controls="prefcollapse">
+    Recommendation Preferences
+</button>
+
+<div class="prefsBox collapse" id="prefcollapse">
+    <h5>My Preferences</h5> 
     <form id="prefs" method="POST" action="{{url_for('profile', username=username)}}">
         <div class="form-group">
         <h6>Include: </h6>
@@ -30,7 +34,7 @@
         
     <input type="submit" name="submit-btn" value="Update Preferences" class="btn btn-secondary">
     </form>
-
+<br>
     <form id="filts" method="POST" action="{{url_for('profile', username=username)}}">
         <div class="form-group">
         <h6>Exclude: </h6>

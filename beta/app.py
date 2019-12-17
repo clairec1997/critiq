@@ -270,7 +270,7 @@ def update(sid, cnum):
                 allch = lookup.getChapters(conn, sid)
                 title = lookup.getTitle(conn, sid)
                 return render_template('write.html', sid=sid, cnum=cnum, story=story, 
-                                        allch=allch, page_title="Update '{}'".format(title['title']))
+                                        allch=allch, title=title['title'], page_title="Update '{}'".format(title['title']))
 
             if request.method=="POST":
                 sometext = request.form['write']

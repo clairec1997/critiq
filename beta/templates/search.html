@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block head_stuff %}
-    {% if (resKind=="Works") or (resKind=="Authors") %}
+    {% if resKind=="Works" %}
     <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
     <!-- <link rel="stylesheet" href="{{url_for('static', filename = 'bootstrap3_style_bits.css')}}"> -->
@@ -13,7 +13,7 @@
 {% block content %}
 <br>
 <div class="container">
-{% if warnings %}
+{% if warnings and (resKind=="Works") %}
 	<div class="row">
         <div id="filter-panel" class="collapse filter-panel">
             <div class="panel panel-default">

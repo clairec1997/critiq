@@ -2,24 +2,25 @@
 
 {% block content %}
 <body>
+    <br>
+    <!-- <ul> -->
+        {% for i in allch %}
+            <a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}"><p>Edit chapter {{i['cnum']}}</p></a>
+            {% if loop.last %}
+            <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><button class="btn btn-info">Add Chapter {{i['cnum']+1}}</button></a>
+            {% endif %}
+        {% endfor %}
+    <!-- </ul> -->
 
     <form action="" method="POST">
         <label>
             <h1>Write Your Story Here</h1>
+            <h4>Chapter {{cnum}} of {{title}}</h4>
             <textarea id="tinytext" name="write"></textarea>
         </label>
         <br>
         <input type="submit" class="btn btn-info" value="Submit" name="submit">
     </form>
-
-<ul>
-{% for i in allch %}
-    <a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}"><p>Edit chapter {{i['cnum']}}</p></a>
-    {% if loop.last %}
-    <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><p>Add Chapter {{i['cnum']+1}}</p></a>
-    {% endif %}
-{% endfor %}
-</ul>
 
 <script>
 var story = `{{story|safe}}`
