@@ -339,7 +339,7 @@ def addToHistory(conn, uid, sid):
     now = datetime.now()
     #frmat = now.strftime('%Y-%m-%d %H:%M:%S')
     curs = dbi.dictCursor(conn)
-    curs.execute('''insert into history values(%s, %s, %s) 
+    curs.execute('''insert into history(uid,sid,visited) values(%s, %s, %s) 
                     on duplicate key update visited = %s''',
                     [uid, sid, now, now])
 def getHistory(conn, uid):
