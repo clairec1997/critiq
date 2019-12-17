@@ -113,3 +113,11 @@ a:hover {
     padding: 10px;
     border-radius: 5px;
 }
+.filter-col {
+    display: inline;
+    max-height: fit-content;
+}
+
+.filter-box {
+    margin: 10px;
+}

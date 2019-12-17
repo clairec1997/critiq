@@ -65,7 +65,7 @@ def searchWorks(conn, kind, searchterm, filters):
 
     if kind == "work":
         curs.execute('''select * from (select sid, uid, title, updated, 
-                    summary, stars, wip, count(sid) from
+                    summary, stars, wip, avgRating, count(sid) from
                     (select * from works where title like %s) as q1 
                     left outer join chapters using(sid) group by sid) as q2 
                     left outer join (select uid, username from users) as q3 
@@ -73,7 +73,7 @@ def searchWorks(conn, kind, searchterm, filters):
                 params)
     else:
         curs.execute('''select * from (select sid, uid, title, updated, 
-                        summary, stars, wip, count(sid) from 
+                        summary, stars, wip, avgRating, count(sid) from 
                         (select tid from tags where tname = %s) as q1 
                         left outer join taglink using(tid) 
                         left outer join works using(sid)
@@ -185,8 +185,8 @@ def getTags(conn, type):
 def addStory(conn, uid, title, summary, isFin):
     '''given a uid, title, summary, adds the story'''
     curs = dbi.cursor(conn)
-    curs.execute('''insert into works(uid, title, summary, wip)
-                    values (%s, %s, %s, %s)''', 
+    curs.execute('''insert into works(uid, title, summary, wip, avgRating)
+                    values (%s, %s, %s, %s, 0)''', 
                     [uid, title, summary, isFin])
     curs.execute('select last_insert_id()')
     return curs.fetchone()
@@ -254,7 +254,7 @@ def getRecs(conn, uid, filters):
         isFilters = (" where sid not in (select sid from taglink where tid in %s) " 
                     if filters else "")
         curs.execute('''select * from (select sid, uid, title, updated, summary, 
-                    stars, count(sid), username from 
+                    stars, avgRating, count(sid), username from 
                         (select sid from taglink where tid in %s group by sid) as q1 
                     left outer join works using(sid) 
                     left outer join 
@@ -262,7 +262,7 @@ def getRecs(conn, uid, filters):
                     using (uid) 
                     left outer join chapters using(sid) group by sid) as q3 ''' 
                     + isFilters + 
-                    '''order by stars desc''', 
+                    '''order by avgRating desc''', 
                     ([tags, filters] if filters else [tags]))
         res = curs.fetchall()
         return res

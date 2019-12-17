@@ -16,7 +16,7 @@
                     <form class="form-inline" role="form" method="POST" action="{{request.url}}">
                         <div class="form-group">
                                 <label class="filter-col" style="margin-right:10px;" for="pref-exclude">
-                                    <div class="dropdown">
+                                    <div class="dropdown filter-box">
                                             <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                 Don't Show Me Works Involving:
                                                 <span class="sr-only">Toggle Dropdown</span>
@@ -30,11 +30,19 @@
                                             </li>
                                             {% endfor %} 
                                             </ul>
-                                            <button type="submit" class="btn btn-default filter-col">
-                                                <span class="glyphicon glyphicon-record"></span> Exclude
-                                            </button>
                                     </div>
-                                </label>                                              
+                                    <div class="dropdown filter-box">
+                                        <select id="sortby" name="sortby" class="form-control">
+                                            <option value="">Sort By:</option>
+                                            <option value="avgRating">Rating</option>
+                                            <option value='updated'>Date Updated</option>
+                                        </select>
+                                    </div>
+
+                                <button type="submit" class="btn btn-default filter-box">
+                                    <span class="glyphicon glyphicon-record"></span> Apply
+                                </button>
+                            </label>
                         </div> <!-- form group [rows] -->       
                     </form>
                 </div>

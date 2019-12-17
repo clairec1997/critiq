@@ -546,15 +546,26 @@ def worksByTerm(search_kind, search_term):
     kind = search_kind
     conn = lookup.getConn(CONN)
     filters = []
+    sortBy = None
 
     exclude = session['filters'] if 'filters' in session else []
     
     if (request.method == "POST") and not (kind == "author"):
         filters = request.form.getlist('warnings[]')
+        sortBy = request.form.get('sortby')
 
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term, set(filters + exclude))
     )
+
+    if sortBy:
+        if sortBy == 'avgRating':
+            for work in res:
+                if work.get('avgRating') == None:
+                    work.update({'avgRating': 0})
+        res = sorted(res, reverse = True, key = lambda work: work[sortBy])
+        print ("sorted byyyyy\n {}".format(str(res)))
+
 
     resKind = "Authors" if kind == "author" else "Works"
     nm = "Tag" if (kind == "tag") else "Term"
