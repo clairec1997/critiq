@@ -322,7 +322,8 @@ def getHistory(conn, uid):
 
 def getAllComments(conn, cid):
     curs = dbi.dictCursor(conn)
-    curs.execute('''select reviews.reviewText as reviewText, reviews.rid as rid, users.username as commenter 
+    curs.execute('''select reviews.reviewText as reviewText, reviews.rid as rid, 
+                        users.username as commenter, reviews.ishelpful as ishelpful
                         from reviews inner join reviewCredits using(rid)
                         inner join users on reviews.commenter=users.uid
                         where cid=%s

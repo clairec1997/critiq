@@ -1,6 +1,7 @@
-/* body{
-    font-family: Raleway;
-} */
+body{
+    /* font-family: Raleway; */
+    size: 1.5em;
+}
 
 #messages {
     color: green;
@@ -126,4 +127,22 @@ a:hover {
 
 .filter-box {
     margin:10px;
+}
+
+#searchLabel {
+    padding-right: 5px;
+}
+
+.like {
+    background-color: #888888;
+    border-color: #888888;
+    padding: 3px;
+    border-radius:2px;
+}
+
+.likeselected {
+    background-color: green;
+    border-color: green;
+    padding: 3px;
+    border-radius:2px;
 }

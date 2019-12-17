@@ -63,6 +63,10 @@ def join():
         if passwd1 != passwd2:
             flash('Passwords do not match')
             return redirect( url_for('index'))
+        
+        #password policy
+        #This policy was not always in effect, so if you want to,
+        #you can test with legacy shorter username/password pairs
         if len(passwd1) < 12:
             flash('Passwords must be at least 12 characters long')
             return redirect( url_for('index'))
@@ -422,6 +426,9 @@ def read(sid, cnum):
 
 @app.route('/404/')
 def notFound():
+    '''Lets user know that something is wrong when they try to
+    access a chapter/story that doesn't exist; 
+    redirecting them to index would be confusing.'''
     return render_template('404.html', page_title='404')
 
 @app.route('/bookmarks/')
@@ -618,6 +625,7 @@ def history():
 
 @app.route('/markHelpful/', methods=["POST"])
 def markHelpful():
+    print('starting mark helpful')
     conn = lookup.getConn(CONN)
     helpful = request.form.get('helpful')
     print(helpful)

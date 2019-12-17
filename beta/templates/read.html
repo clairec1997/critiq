@@ -15,6 +15,7 @@
     {% endif %}
 </form>
 
+<br>
 
 <form method="POST" action="{{url_for('chapIndex')}}" class="form-inline">
     <input value={{sid}} name="sid" type=hidden>
@@ -51,13 +52,24 @@
             <div class=comment>
                 <p><a href="{{url_for('profile', username=comment.commenter)}}">{{ comment.commenter}}</a></p>
                 <p>{{ comment.reviewText }}</p>
-                <form class="helpfulForm" method="POST"> <!-- action="{{url_for('markHelpful')}}"> -->
+                <form class="helpfulForm" method="POST" id=rid{{comment.rid}}> <!-- action="{{url_for('markHelpful')}}"> -->
                     <input class="helpfulRid" value={{comment.rid}} name="rid" type=hidden>
-
-                    <label id="helpful" class="helpful"><div class=labelInput>&#128077;</div>
+                    {% if comment.ishelpful == False %}
+                    <label id="helpful" class="helpful"><div class=labelInput><div id="helpfulbtn" class="like">&#128077;</div></div>
                         <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
-                    <label id="nothelpful" class="helpful"><div class=labelInput>&#128078;</div> 
+                    <label id="nothelpful" class="helpful"><div class=labelInput><div id="nothelpfulbtn" class="likeselected">&#128078;</div></div> 
                         <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                    {% elif comment.ishelpful == True %}
+                    <label id="helpful" class="helpful"><div class=labelInput><div id="helpfulbtn" class="likeselected">&#128077;</div></div>
+                        <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
+                    <label id="nothelpful" class="helpful"><div class=labelInput><div id="nothelpfulbtn" class="like">&#128078;</div></div> 
+                        <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                    {% else %}
+                    <label id="helpful" class="helpful"><div class=labelInput><div id="helpfulbtn" class="like">&#128077;</div></div>
+                        <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
+                    <label id="nothelpful" class="helpful"><div class=labelInput><div id="nothelpfulbtn" class="like">&#128078;</div></div> 
+                        <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                    {% endif %}
                 </form>
             </div>
             <br>
@@ -165,19 +177,21 @@
     });
 
     $(".helpfulForm").on("click", "input:radio.helpfulInput", function(event) {
-        // $(".rating").html(" &#9734;")
         console.log('mark helpful with Ajax')
         //turn on ajax
         if (progressive_on) {
-            rate = $(this).val();
-            console.log(rate);
-            $(this).addClass("btn-info")
-            $(this).removeClass("btn-secondary")
+            helpful = $(this).val();
+            console.log(helpful);
             // $("input:radio.helpfulInput").hide()
 
             var rid = $(this).closest("form").find(".helpfulRid").val()
             console.log(rid)
-            $.post(RATEURL, {'helpful': helpful, 'rid': rid}, showHelpful)
+            var styles = {"background-color": "#888888",
+                        "border-color": "#888888"}
+            $(this).closest("form").find("#helpfulbtn").css(styles)
+            $(this).closest("form").find("#nothelpfulbtn").css(styles)
+
+            $.post(HELPFULURL, {'helpful': helpful, 'rid': rid}, showHelpful)
             
         }
     });
@@ -190,6 +204,13 @@
 
     function showHelpful(obj) {
         console.log(obj)
+        var styles = {"background-color": "green",
+                        "border-color": "green"}
+        if (obj.helpful == 0){
+            $("#rid" + obj.rid).find("#nothelpfulbtn").css(styles)
+        } else if (obj.helpful == 1) {
+            $("#rid" + obj.rid).find("#helpfulbtn").css(styles)
+        }
     }
 
 </script>
