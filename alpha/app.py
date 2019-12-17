@@ -132,23 +132,25 @@ def profile(username):
         if 'uid' in session:
             uid = session['uid']
             # conn = lookup.getConn(CONN)
-            lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'))
+            lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'), False)
             flash('Your preferences have been updated!')      
     
     # don't trust the URL; it's only there for decoration
     if 'username' in session:
         currentUsername = session['username']
         uid = lookup.getUID(conn, username)#session['uid']
-        prefs = lookup.getPrefs(conn, uid)
-        tids = [tag['tid'] for tag in prefs]
+        
+        prefs = lookup.getPrefs(conn, uid, False)
+
+        # tids = [tag['tid'] for tag in prefs]
         allTags = [tag for tag in lookup.getTags(conn, 'genre')
-                        if tag['tid'] not in tids]
+                        if tag['tid'] not in prefs]
         stories = lookup.getStories(conn, uid)
         # session['visits'] = 1+int(session['visits'])
         if prefs:
-            giveprefs = prefs
+            giveprefs = [tag for tag in lookup.getTags(conn, 'genre') if tag['tid'] in prefs]
         else:
-            giveprefs = {}
+            giveprefs = []
         return render_template('profile.html',
                             page_title="{}'s Profile".format(username),
                             username=username, uid=uid, prefs=giveprefs,
@@ -375,6 +377,7 @@ def recommendations():
             warnings = lookup.getTags(conn, 'warnings')
 
             recs = lookup.getRecs(conn, uid)
+            print (recs)
             # return render_template('recommendations.html', recommendations=recs)
             return render_template('search.html',
                                     resKind="Recs", res = recs, warnings=[])

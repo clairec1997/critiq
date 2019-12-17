@@ -110,6 +110,7 @@
 	      {% endif %}
             </tr>
         </thead>
+        {% if res %}
         {%for result in res %}
         {% if (resKind=="Works") or (resKind=="Recs") %}
             {% if result and result['sid'] %}   
@@ -127,7 +128,7 @@
             </tr> 
             {% else %}
             <tr><td>No results found</td></tr>
-            {% endif %} 
+            {% endif %}
 	    {% else %}
 	        <tr uid="{{result['uid']}}">
 	            <td class="uname"><a href="{{ url_for('profile', username=result['username']) }}">{{result['username']}}</a></td>
@@ -135,6 +136,9 @@
         {% endif %}
         
         {%endfor%}
+        {% else %}
+            <tr><td>No results found</td></tr>
+        {% endif %} 
 	    
 
         </table>

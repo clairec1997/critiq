@@ -177,7 +177,6 @@ def profile(username):
             
 
             stories = lookup.getStories(conn, uid)
-            
             return render_template('profile.html',
                                 page_title="{}'s Profile".format(username),
                                 username=username, uid=uid, prefs=prefTags, 

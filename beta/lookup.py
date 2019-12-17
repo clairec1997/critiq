@@ -146,7 +146,7 @@ def getRecs(conn, uid, filters):
         res = curs.fetchall()
         return res
     else:
-        return None
+        return {}
 
 def searchAuthors(conn, author):
     '''finds authors matching name'''

@@ -227,43 +227,79 @@ def getChapters(conn, sid):
                 order by cnum asc''',[sid])
     return curs.fetchall()
 
-def getPrefs(conn, uid):
-    '''given uid, retrieves users prefs'''
+def getPrefs(conn, uid, wantsWarnings):
+    '''given uid, retrieves users prefs or warning'''
     curs = dbi.dictCursor(conn)
-    curs.execute('''select tid, tname from 
+    curs.execute('''select tid from 
                 prefs left outer join tags 
-                using(tid) where uid=%s''', 
-                [uid])
-    return curs.fetchall()
+                using(tid) where uid=%s and isWarning=%s''', 
+                [uid, wantsWarnings])
+    return [tag['tid'] for tag in curs.fetchall()]
     
-def updatePrefs(conn, uid, prefs):
+def updatePrefs(conn, uid, prefs, isWarnings):
+    '''updates user preferences'''
     curs = dbi.dictCursor(conn)
-    curs.execute('''delete from prefs where uid=%s''',
-                [uid])
+    curs.execute('''delete from prefs where uid=%s and isWarning=%s''',
+                [uid, isWarnings])
     for pref in prefs:
-        curs.execute('''insert into prefs values(%s, %s)''',
-                    [uid, pref])
+        curs.execute('''insert into prefs values(%s, %s, %s)''',
+                    [uid, pref, isWarnings])
     # return getPrefs(conn, uid)
 
+# def getPrefs(conn, uid):
+#     '''given uid, retrieves users prefs'''
+#     curs = dbi.dictCursor(conn)
+#     curs.execute('''select tid, tname from 
+#                 prefs left outer join tags 
+#                 using(tid) where uid=%s''', 
+#                 [uid])
+#     return curs.fetchall()
+    
+# def updatePrefs(conn, uid, prefs):
+#     curs = dbi.dictCursor(conn)
+#     curs.execute('''delete from prefs where uid=%s''',
+#                 [uid])
+#     for pref in prefs:
+#         curs.execute('''insert into prefs values(%s, %s)''',
+#                     [uid, pref])
+#     # return getPrefs(conn, uid)
 def getRecs(conn, uid):
+    '''gets recommended stories'''
     curs = dbi.dictCursor(conn)
-    print(getPrefs(conn, uid))
-    tags = tuple([tag['tid'] for tag in getPrefs(conn, uid)])
-    print (tags)
-    curs.execute('''select sid, uid, title, updated, summary, 
-                stars, count(sid), username from 
-                    (select sid from taglink where tid in %s group by sid) as q1 
-                left outer join works using(sid) 
-                left outer join 
-                    (select uid, username from users) as q2 
-                using (uid) 
-                left outer join chapters using(sid) group by sid
-                order by stars desc''', 
-                [tags])
+    currentPrefs = getPrefs(conn, uid, False)
+    if currentPrefs:
+        curs.execute('''select * from (select sid, uid, title, updated, summary, 
+                        stars, avgRating, count(sid), username from 
+                        (select sid from taglink where tid in %s group by sid) as q1 
+                        left outer join works using(sid) 
+                        left outer join 
+                        (select uid, username from users) as q2 
+                        using (uid) 
+                        left outer join chapters using(sid) group by sid) as q3 
+                        order by avgRating desc''', 
+                        ([currentPrefs]))
+        res = curs.fetchall()
+        return res
+    else:
+        return {}
+# def getRecs(conn, uid):
+#     curs = dbi.dictCursor(conn)
+#     tags = tuple([tag['tid'] for tag in getPrefs(conn, uid, False)])
+#     print (tags)
+#     curs.execute('''select * from (select sid, uid, title, updated, summary, 
+#                     stars, count(sid), username from 
+#                     (select sid from taglink where tid in %s group by sid) as q1 
+#                     left outer join works using(sid) 
+#                     left outer join 
+#                     (select uid, username from users) as q2 
+#                     using (uid) 
+#                     left outer join chapters using(sid) group by sid 
+#                     order by stars desc''',
+#                     [tags])
                 
-    res = curs.fetchall()
-    print (res)
-    return res
+#     res = curs.fetchall()
+#     print (res)
+#     return res
 
 def getComments(conn, uid, cid):
     curs = dbi.dictCursor(conn)
