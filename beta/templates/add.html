@@ -3,16 +3,21 @@
 {% block content %}
 
 <form action="" method="POST">
-    <label>Title: <input type="text" name="title" class="form-control"></label> 
+    <h1>Add a Story</h1>
+
+    <div class="form-group">
+        <label for="titleid"><b>Title: </b></label>
+        <input type="text" name="title" id ="titleid" class="form-control">
+    </div>
     
     <div class="form-group">
-    <label>Summary: <br>
-        <textarea name="summary" class="form-control"></textarea>
+        <label for="summaryid"><b>Summary: </b></label>
+        <textarea name="summary" id="summaryid" class="form-control" rows=8></textarea>
     </label> 
     </div>
 
     <div class="form-group">
-    <label>Genres: <br>
+    <label><b>Genres:</b><br>
         {% for g in genre %}
         <div class="form-check form-check-inline">
             <label> {{ g['tname'] }}
@@ -24,7 +29,7 @@
     </div>
 
     <div class="form-group">
-    <label>Audience: <br>
+    <label><b>Audience: </b><br>
         {% for a in audience %}
         <div class="form-check form-check-inline">
             <label> {{ a['tname'] }}
@@ -36,7 +41,7 @@
     </div>
 
     <div class="form-group">
-    <label>Warnings: <br>
+    <label><b>Warnings: </b><br>
         {% for w in warnings %}
         <div class="form-check form-check-inline">
         <label> {{ w['tname'] }}
@@ -48,7 +53,7 @@
     </div>
 
     <div class="form-group">
-    <label>Status: <br>
+    <label><b>Status: </b><br>
         {% for i in isFin %}
         <div class="form-check form-check-inline">
         <label> {{ i['tname'] }}
