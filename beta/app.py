@@ -14,15 +14,12 @@ UPLOAD_FOLDER = '/uploaded/'
 ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
 
 CONN = 'critiq_db'
-# CONN = 'spulavar_db'
 
 lock = Lock()
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-app.secret_key = 'your secret here'
-# replace that with a random key
 app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
                                           'abcdefghijklmnopqrstuvxyz' +
                                           '0123456789'))
@@ -30,6 +27,8 @@ app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
 
 # This gets us better error messages for certain common request errors
 app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+
+app.config['PERMANENT_SESSION_LIFETIME'] =  300000 #about a month
 
 @app.route('/', methods=["GET", "POST"])
 def index():
@@ -115,14 +114,13 @@ def login():
             session['username'] = username
             session['uid'] = row['uid']
             uid=session['uid']
-            # print(session['uid'])
 
             unwanted = lookup.getPrefs(conn, uid, True)
             session['filters'] = unwanted
             print (session)
 
             session['logged_in'] = True
-            # session['visits'] = 1
+            session.permanent = True
             return redirect( url_for('recommendations') )
         else:
             flash('Login incorrect. Try again or join')
@@ -132,8 +130,7 @@ def login():
         return redirect( url_for('index') )
 
 
-#we should make this by username, not uid
-@app.route('/profile/<username>', methods = ["GET", "POST"]) #allow everyone to access all profiles, but only if logged in can change data
+@app.route('/profile/<username>', methods = ["GET", "POST"]) #allow everyone to access all profiles, only let logged in users change own data
 def profile(username):
     conn = lookup.getConn(CONN)
     # try:
@@ -158,7 +155,7 @@ def profile(username):
     # don't trust the URL; it's only there for decoration
     if 'username' in session:
         currentUsername = session['username']
-        uid = lookup.getUID(conn, username)#session['uid']
+        uid = lookup.getUID(conn, username)
         prefs = lookup.getPrefs(conn, uid, False)
         warns = lookup.getPrefs(conn, uid, True)
 
@@ -172,7 +169,6 @@ def profile(username):
                         if tag['tid'] not in warns]
 
         stories = lookup.getStories(conn, uid)
-        # session['visits'] = 1+int(session['visits'])
         if prefs and warns:
             return render_template('profile.html',
                                 page_title="{}'s Profile".format(username),
@@ -222,28 +218,6 @@ def updateProfile():
     lookup.updateProfile(conn, uid, dob)
     username = session['username']
     return redirect( url_for('profile', username=username))
-
-# @app.route('/prefs/<uid>', methods=["GET"])
-# def prefs(uid):
-#     try:
-#         if 'uid' in session:
-#             uid = session['uid']
-#             conn = lookup.getConn(CONN)
-#             prefs = lookup.getPrefs(conn, uid, False)
-#             tids = [tag['tid'] for tag in prefs]
-#             allTags = [tag for tag in lookup.getTags(conn, 'genre')
-#                          if tag['tid'] not in tids]
-#             if prefs:
-#                 return render_template('profile.html', uid=uid, prefs=prefs, allTags=allTags)
-#             else:
-#                 return render_template('profile.html', uid=uid, prefs={}, allTags=allTags)
-#         else: 
-#             flash("Please log in or join")
-#             return redirect(url_for('index'))
-#     except Exception as err:
-#         flash('Error: '+str(err))
-#         return redirect(url_for('index'))
-
 
 @app.route('/manage/')
 def manage():
@@ -354,50 +328,50 @@ def update(sid, cnum):
 @app.route('/read/<int:sid>/<int:cnum>/', methods=["GET", "POST"])
 def read(sid, cnum): 
     conn = lookup.getConn(CONN)
-    # print("sid: "+str(sid))
-    # print("cnum: "+str(cnum))
+
     try:
         chapter = lookup.getChapter(conn, sid, cnum)
-        # print('Chapter dict:')
-        # print(chapter)
         cid = chapter['cid']
-        # print(cid)
         try:
+            #check if they're logged in
+            if 'username' not in session:
+                return redirect(url_for('index'))
+
             uid = session['uid']
 
             #add to history
             print(lookup.addToHistory(conn, uid, sid, cid))
+
+            #check if they've rated the piece already
             rating = lookup.getRating(conn, sid, uid)
             if rating is not None:
                 rating = rating['rating']
                 avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
             else:
                 avgRating = None
-            print(rating)
+
+            #these are the comments the user has posted on this chapter
             comments = lookup.getComments(conn, uid, cid)
-            
-            # print('Comments:')
-            # print(comments)
 
             story = ""
 
             with open(chapter['filename'], 'r') as infile:
                 story = infile.read()
-                print("Read for Reading:" + story)
+                # print("Read for Reading:" + story)
 
             isBookmarked = lookup.isBookmarked(conn,sid,uid)
 
             allch = lookup.getChapters(conn,sid)
             numChap = lookup.getNumChaps(conn, sid)['count(cid)']
-            # print(numChap)
             work = lookup.getStory(conn, sid)
-            print(work)
+            
+            #only display all comments on a work if the author is viewing
+            #otherwise, users can only see the comments they've written
             if uid == work['uid']:
                 allComments = lookup.getAllComments(conn, cid)
             else:
                 allComments = None
-            if 'username' not in session:
-                return redirect(url_for('index'))
+
             if session['username'] == work['username']:
                 isUpdate = True
             else:
@@ -474,7 +448,7 @@ def addComment():
     conn = lookup.getConn(CONN)
     commentText = request.form["commentText"]
     cid = request.form['chapcid']
-    # print(commentText)
+
     if 'uid' in session:
         uid = session['uid']
         lock.acquire()
@@ -485,44 +459,15 @@ def addComment():
     else:
         return redirect(url_for('index'))
 
-# @app.route('/addCommentAjax/', methods=["POST"])
-# def addCommentAjax():
-#     conn = lookup.getConn(CONN)
-#     commentText = request.form.get("commentText")
-#     print(commentText)
-#     cid = request.form.get('cid')
-#     cnum = request.form.get('cnum')
-#     sid = request.form.get('sid')
-#     try:
-#         if 'uid' in session:
-#             uid = session['uid']
-#             lookup.addComment(conn, commentText, uid, cid)
-#             flash('Comment submitted!')
-#             return jsonify(error=False,
-#                             commentText=commentText,
-#                             uid=uid,
-#                             cid=cid
-#                             )
-#         else:
-#             flash("Log in before commenting.")
-#             return redirect(url_for('index'))
-#     except Exception as err:
-#         print(err)
-#         return jsonify( {'error': True, 'err': str(err) } )
-
 @app.route('/rateAjax/', methods=["POST"])
 def rateAjax():
-    # print('rateAjax called')
     conn = lookup.getConn(CONN)
     rating = request.form.get('rating')
     sid = request.form.get('sid')
     uid = session['uid']
-    # print("rating to add:")
-    # print(rating)
+
     lookup.addRating(conn, uid, sid, rating)
     avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
-    # print("average rating for sid " + str(sid))
-    # print(avgRating)
     lookup.updateAvgRating(conn, sid, avgRating)
     return jsonify(rating=rating, avgRating=avgRating)
     
@@ -625,19 +570,13 @@ def history():
 
 @app.route('/markHelpful/', methods=["POST"])
 def markHelpful():
-    print('starting mark helpful')
+    '''allows authors to mark particular comments as helpful or unhelpful'''
     conn = lookup.getConn(CONN)
+
     helpful = request.form.get('helpful')
-    print(helpful)
-    rid = request.form.get('rid')
-    print(rid)
-    # print("rating to add:")
-    # print(rating)
+    rid = request.form.get('rid') #review id
+    
     lookup.changeHelpful(conn, rid, helpful)
-    # avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
-    # print("average rating for sid " + str(sid))
-    # print(avgRating)
-    # lookup.updateAvgRating(conn, sid, avgRating)
     return jsonify(helpful=helpful, rid=rid)
 
 @app.route('/addBookmark/', methods=["POST"])
