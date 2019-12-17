@@ -545,26 +545,45 @@ def worksByTerm(search_kind, search_term):
 
     kind = search_kind
     conn = lookup.getConn(CONN)
+    
     filters = []
+    completion = None
+    audience = None
     sortBy = None
-
     exclude = session['filters'] if 'filters' in session else []
     
     if (request.method == "POST") and not (kind == "author"):
         filters = request.form.getlist('warnings[]')
         sortBy = request.form.get('sortby')
+        completion = request.form.get('finished')
+        audience = request.form.get('audience')
 
     res = (lookup.searchAuthors(conn, term) if kind == "author" 
     else lookup.searchWorks(conn, kind, term, set(filters + exclude))
     )
 
-    if sortBy:
-        if sortBy == 'avgRating':
-            for work in res:
-                if work.get('avgRating') == None:
-                    work.update({'avgRating': 0})
-        res = sorted(res, reverse = True, key = lambda work: work[sortBy])
-        print ("sorted byyyyy\n {}".format(str(res)))
+    if not kind == "author":
+        print("pre everything\n", str(res))
+        if completion:
+
+            res = ([work for work in res if not work['wip']] 
+                    if completion == 'wip' else
+                    [work for work in res if work['wip']])
+        print ("completion\n", str(res))
+        if audience:
+            res = [work for work in res if work['audience'] == audience]
+
+
+        if sortBy:
+            if sortBy == 'avgRating':
+                for work in res:
+                    if work.get('avgRating') == None:
+                        work.update({'avgRating': 0})
+            
+            print ("checking\n {}".format(str(res)))
+
+            res = sorted(res, reverse = True, key = lambda work: work[sortBy])
+            print ("sorted byyyyy\n {}".format(str(res)))
 
 
     resKind = "Authors" if kind == "author" else "Works"

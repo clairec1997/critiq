@@ -118,6 +118,12 @@ a:hover {
     max-height: fit-content;
 }
 
+.filter-row {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
 .filter-box {
-    margin: 10px;
+    margin:10px;
 }
