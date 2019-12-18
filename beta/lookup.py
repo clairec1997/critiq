@@ -402,7 +402,7 @@ def getHistory(conn, uid):
                     (select uid, username from users) as q2 
                     using(uid) 
                     left outer join chapters using(sid) group by sid
-                    order by visited''', 
+                    order by visited desc''', 
                     [uid])
     return curs.fetchall()
     

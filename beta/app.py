@@ -37,7 +37,7 @@ def index():
         kind = request.form.get('search_kind')
         term = (request.form.get('select_tag') if kind == "tag" 
                 else request.form.get('search_term'))
-        print ("term", term)
+        # print ("term", term)
 
         return redirect(url_for('worksByTerm', search_kind=kind, search_term=term))    
     else:
@@ -117,7 +117,7 @@ def login():
 
             unwanted = lookup.getPrefs(conn, uid, True)
             session['filters'] = unwanted
-            print (session)
+            # print (session)
 
             session['logged_in'] = True
             session.permanent = True
@@ -192,13 +192,17 @@ def profile(username):
 
 @app.route('/updateProfile/', methods=["POST"])
 def updateProfile():
-    conn = lookup.getConn(CONN)
-    uid = session['uid']
-    dob = request.form.get('dob')
+    if 'uid' in session:
+        conn = lookup.getConn(CONN)
+        uid = session['uid']
+        dob = request.form.get('dob')
 
-    lookup.updateProfile(conn, uid, dob)
-    username = session['username']
-    return redirect( url_for('profile', username=username))
+        lookup.updateProfile(conn, uid, dob)
+        username = session['username']
+        return redirect( url_for('profile', username=username))
+    else:
+        flash('Log in to bookmark works.')
+        return redirect(url_for('index'))
 
 @app.route('/manage/')
 def manage():
@@ -260,7 +264,7 @@ def update(sid, cnum):
     try:
         conn = lookup.getConn(CONN)
         authorid = lookup.getAuthorId(conn,sid)[0]
-        print(authorid, session['uid'])
+        # print(authorid, session['uid'])
 
         if 'uid' in session and session['uid']==authorid:
             if request.method=="GET":
@@ -268,9 +272,9 @@ def update(sid, cnum):
                 story = ""
                 if chapter:
                     with open(chapter['filename'], 'r') as infile:
-                        print("From db: "+chapter['filename'])
+                        # print("From db: "+chapter['filename'])
                         story = infile.read()
-                        print("Read for Update" + story)
+                        # print("Read for Update" + story)
                 allch = lookup.getChapters(conn, sid)
                 title = lookup.getTitle(conn, sid)
                 return render_template('write.html', sid=sid, cnum=cnum, story=story, 
@@ -286,12 +290,12 @@ def update(sid, cnum):
                 dirname = os.path.dirname(__file__)
                 relative = 'uploaded/'+'sid'+str(sid)+'cnum'+str(cnum)+'.html'
                 filename = os.path.join(dirname, relative)
-                print(filename)
+                # print(filename)
 
                 with open(filename, 'w') as outfile:
                     outfile.write(somehtml)
-                    print("Where it's written:" + filename)
-                    print("Write for Update" + somehtml)
+                    # print("Where it's written:" + filename)
+                    # print("Write for Update" + somehtml)
                 
                 chapter = lookup.getChapter(conn,sid,cnum)
 
@@ -301,7 +305,7 @@ def update(sid, cnum):
                     cid = None
 
                 lookup.setChapter(conn, sid, cnum, cid, filename)
-                print("ok i got this")
+                # print("ok i got this")
                 return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
             flash('''You are not authorized to edit this work. 
@@ -380,7 +384,7 @@ def read(sid, cnum):
                                     old_rating=rating,
                                     avgRating=avgRating)
         except Exception as err:
-            print(err)
+            # print(err)
             return redirect( url_for('index') )
     except Exception as err:
         return redirect( url_for('notFound') )
@@ -478,67 +482,71 @@ def logout():
 @app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
 def worksByTerm(search_kind, search_term):
     '''searches for works by work, author or tag. if no term then default to all'''
-    term = search_term
+    if 'uid' in session:
+        term = search_term
 
-    kind = search_kind
-    conn = lookup.getConn(CONN)
-    
-    filters = []
-    completion = None
-    audience = None
-    sortBy = None
-    exclude = session['filters'] if 'filters' in session else []
-    
-    if (request.method == "POST") and not (kind == "author"):
-        filters = request.form.getlist('warnings[]')
-        sortBy = request.form.get('sortby')
-        completion = request.form.get('finished')
-        audience = request.form.get('audience')
+        kind = search_kind
+        conn = lookup.getConn(CONN)
+        
+        filters = []
+        completion = None
+        audience = None
+        sortBy = None
+        exclude = session['filters'] if 'filters' in session else []
+        
+        if (request.method == "POST") and not (kind == "author"):
+            filters = request.form.getlist('warnings[]')
+            sortBy = request.form.get('sortby')
+            completion = request.form.get('finished')
+            audience = request.form.get('audience')
 
-    res = (lookup.searchAuthors(conn, term) if kind == "author" 
-    else lookup.searchWorks(conn, kind, term, set(filters + exclude))
-    )
-    print (str(res))
+        res = (lookup.searchAuthors(conn, term) if kind == "author" 
+        else lookup.searchWorks(conn, kind, term, set(filters + exclude))
+        )
+        # print (str(res))
 
-    if not kind == "author":
-        print("pre everything\n", str(res))
-        if completion:
+        if not kind == "author":
+            # print("pre everything\n", str(res))
+            if completion:
 
-            res = ([work for work in res if not work['wip']] 
-                    if completion == 'wip' else
-                    [work for work in res if work['wip']])
-        print ("completion\n", str(res))
-        if audience:
-            res = [work for work in res if work['audience'] == audience]
-
-
-        if sortBy:
-            if sortBy == 'avgRating':
-                for work in res:
-                    if work.get('avgRating') == None:
-                        work.update({'avgRating': 0})
-            
-            print ("checking\n {}".format(str(res)))
-
-            res = sorted(res, reverse = True, key = lambda work: work[sortBy])
-            print ("sorted byyyyy\n {}".format(str(res)))
+                res = ([work for work in res if not work['wip']] 
+                        if completion == 'wip' else
+                        [work for work in res if work['wip']])
+            # print ("completion\n", str(res))
+            if audience:
+                res = [work for work in res if work['audience'] == audience]
 
 
-    resKind = "Authors" if kind == "author" else "Works"
-    nm = "Tag" if (kind == "tag") else "Term"
+            if sortBy:
+                if sortBy == 'avgRating':
+                    for work in res:
+                        if work.get('avgRating') == None:
+                            work.update({'avgRating': 0})
+                
+                # print ("checking\n {}".format(str(res)))
 
-    if not res:
-        flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
-    
-    return render_template('search.html', resKind=resKind, term=term, 
-                            res=res, warnings=lookup.getTags(conn, 'warnings'),
-                            page_title="Search")
+                res = sorted(res, reverse = True, key = lambda work: work[sortBy])
+                # print ("sorted byyyyy\n {}".format(str(res)))
+
+
+        resKind = "Authors" if kind == "author" else "Works"
+        nm = "Tag" if (kind == "tag") else "Term"
+
+        if not res:
+            flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
+        
+        return render_template('search.html', resKind=resKind, term=term, 
+                                res=res, warnings=lookup.getTags(conn, 'warnings'),
+                                page_title="Search")
+    else:
+        flash('Log in to search.')
+        return redirect(url_for('index'))
 
 @app.route('/chapIndex/', methods=["POST"])
 def chapIndex():
     sid = request.form.get('sid')
     cnum = request.form.get('cid')
-    print(sid, cnum)
+    # print(sid, cnum)
     return redirect( url_for('read', sid=sid, cnum=cnum))
 
 @app.route('/history/', methods = ["GET"])
@@ -567,23 +575,27 @@ def markHelpful():
 
 @app.route('/addBookmark/', methods=["POST"])
 def addBookmark():
-    book = request.form['changemark']
-    uid = session['uid']
-    sid = request.form['sid']
+    if 'uid' in session:
+        book = request.form['changemark']
+        uid = session['uid']
+        sid = request.form['sid']
 
-    conn = lookup.getConn(CONN)
-    isBooked = lookup.isBookmarked(conn, sid, uid)
+        conn = lookup.getConn(CONN)
+        isBooked = lookup.isBookmarked(conn, sid, uid)
 
-    if isBooked and book == "Bookmarked":
-        lookup.removeBookmark(conn, sid, uid)
-        flash("Bookmark removed")
-    elif isBooked is None and book == "Add Bookmark":
-        lookup.addBookmark(conn, sid, uid)
-        flash("Bookmark added")
+        if isBooked and book == "Bookmarked":
+            lookup.removeBookmark(conn, sid, uid)
+            flash("Bookmark removed")
+        elif isBooked is None and book == "Add Bookmark":
+            lookup.addBookmark(conn, sid, uid)
+            flash("Bookmark added")
+        else:
+            flash("Bookmark unchanged")
+
+        return redirect(request.referrer)
     else:
-        flash("Bookmark unchanged")
-
-    return redirect(request.referrer)
+        flash('Log in to bookmark works.')
+        return redirect(url_for('index'))
 
 @app.route('/markFinished/<sid>/')
 def markFinished(sid):
