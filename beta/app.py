@@ -297,6 +297,7 @@ def update(sid, cnum):
                     # print("Where it's written:" + filename)
                     # print("Write for Update" + somehtml)
                 
+                lock.acquire()
                 chapter = lookup.getChapter(conn,sid,cnum)
 
                 if chapter:
@@ -306,6 +307,7 @@ def update(sid, cnum):
 
                 lookup.setChapter(conn, sid, cnum, cid, filename)
                 # print("ok i got this")
+                lock.release()
                 return redirect(url_for('read', sid=sid, cnum=cnum))
         else: 
             flash('''You are not authorized to edit this work. 
