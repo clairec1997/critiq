@@ -2,7 +2,7 @@
 
 {% block content %}
 
-<h1>{{title}}</h1>
+<h1>{{page_title}}</h1>
 <h4>Chapter {{cnum}}</h4>
 <h5>By <a href="{{url_for('profile', username=author)}}">{{author}}</a></h5>
 
@@ -129,8 +129,8 @@
 {% endif %}
 
     <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
-        <label>Add a comment on this chapter</label>
-            <textarea name="commentText" rows="8" class="form-control"></textarea>
+        <label>Add a comment on this chapter
+            <textarea name="commentText" rows="8" class="form-control"></textarea></label>
             <br>
             <input value={{chapter.cid}} id="chapcid" name="chapcid" type=hidden>
             <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">

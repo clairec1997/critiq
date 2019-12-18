@@ -7,15 +7,15 @@
 {% if stories %}
 
     {% for story in stories %}
-    <a href= "{{ url_for('update', sid=story['sid']) }}">
-        <div class="managestory">
+    <div class="managestory">
+        <a href= "{{ url_for('update', sid=story['sid']) }}">
             <h4>{{ story['title'] }} </h4>
             <p>{{ story['summary'] }} </p>
             {% if not story['wip'] %}
             <a href="{{url_for('markFinished', sid=story['sid'])}}"><button class="btn btn-info">This work is finished.</button></a>
             {% endif %}
-        </div>  
-    </a>
+        </a>  
+    </div>
     <br>  
     {% endfor %}
 
