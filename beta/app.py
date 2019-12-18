@@ -240,6 +240,10 @@ def add():
             audience = request.form['audience']
             warnings = request.form.getlist('warnings')
             status = request.form['isFin']
+            if status == 32:
+                status = 1
+            elif status == 33:
+                status = 0
         
             conn = lookup.getConn(CONN)
             sid = lookup.addStory(conn, uid, title, summary, status)[0]
