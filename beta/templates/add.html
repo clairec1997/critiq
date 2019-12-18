@@ -17,47 +17,48 @@
     </div>
 
     <div class="form-group">
-    <label><h6>Genres:</h6><br>
+    <fieldset><legend><h6>Genres:</h6></legend><br>
         {% for g in genre %}
         <div class="form-check form-check-inline">
             <label for="genre{{ g['tid'] }}">{{ g['tname'] }}</label>
             <input type="checkbox" name="genre" id="genre{{ g['tid'] }}" value="{{ g['tid'] }}">
         </div>
         {% endfor %}
-    </label>
+    </fieldset>
     </div>
 
     <div class="form-group">
-    <label><h6>Audience: </h6><br>
+    <fieldset><legend><h6>Audience: </h6></legend><br>
         {% for a in audience %}
         <div class="form-check form-check-inline">
             <label for="au{{ a['tid'] }}"> {{ a['tname'] }}</label>
             <input type="radio" name="audience" id="au{{ a['tid'] }}" value="{{ a['tid'] }}">
         </div>
         {% endfor %}
-    </label>
+    </fieldset>
     </div>
 
     <div class="form-group">
-    <label><h6>Warnings: </h6><br>
+    <fieldset>
+        <legend><h6>Warnings: </h6></legend><br>
         {% for w in warnings %}
         <div class="form-check form-check-inline">
         <label for="war{{ w['tid'] }}"> {{ w['tname'] }}</label>
         <input type="checkbox" name="warnings" id="war{{ w['tid'] }}" value="{{ w['tid'] }}">
         </div>
         {% endfor %}
-    </label>
+    </fieldset>
     </div>
 
     <div class="form-group">
-    <label><h6>Status: </h6><br>
+    <fieldset><legend><h6>Status: </h6></legend><br>
         {% for i in isFin %}
         <div class="form-check form-check-inline">
             <label for="stat{{ i['tid'] }}"> {{ i['tname'] }}</label>
             <input type="radio" name="isFin" id="stat{{ i['tid'] }}" value="{{ i['tid'] }}">
         </div>
         {% endfor %}
-    </label>
+    </fieldset>
     </div>
 
     <input type="submit" value="Submit" class="btn btn-info">
