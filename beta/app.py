@@ -240,10 +240,10 @@ def add():
             audience = request.form['audience']
             warnings = request.form.getlist('warnings')
             status = request.form['isFin']
-            if status == 32:
-                status = 1
-            elif status == 33:
-                status = 0
+            if status == '32':
+                status = 1 #work is finished
+            elif status == '33':
+                status = 0 #work is in progress
         
             conn = lookup.getConn(CONN)
             sid = lookup.addStory(conn, uid, title, summary, status)[0]
@@ -584,6 +584,16 @@ def addBookmark():
         flash("Bookmark unchanged")
 
     return redirect(request.referrer)
+
+@app.route('/markFinished/<sid>/')
+def markFinished(sid):
+    if 'uid' in session:
+        conn = lookup.getConn(CONN)
+        lookup.setFinished(conn, sid)
+        return(redirect(url_for('manage')))
+    else:
+        flash('Log in to manage your works.')
+        return redirect(url_for('index'))
 
 if __name__ == '__main__':
 

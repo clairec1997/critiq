@@ -139,7 +139,7 @@ def getRecs(conn, uid, filters):
                     if filters else "")
 
         curs.execute('''select * from (select sid, uid, title, updated, summary, 
-                        stars, avgRating, count(sid), username from 
+                        stars, avgRating, count(sid), username, wip from 
                         (select sid from taglink where tid in %s group by sid) as q1 
                         left outer join works using(sid) 
                         left outer join 
@@ -279,6 +279,12 @@ def addStory(conn, uid, title, summary, isFin):
     curs.execute('select last_insert_id()')
     curs.execute('unlock tables')
     return curs.fetchone()
+
+def setFinished(conn, sid):
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables works write')
+    curs.execute('''update works set wip=1 where sid=%s''', [sid])
+    curs.execute('unlock tables')
 
 # def getTagsAjax(conn):
 #     '''given a conn, gets all tag names'''

@@ -104,7 +104,7 @@
                 <th>Title</th>
                 <th>Author</th>
                 <th># of Chapters</th>
-                <!-- <th>Finished? </th> -->
+                <th>Finished? </th>
 	      {% else %}
 		<th>Author Username</th>
 	      {% endif %}
@@ -118,13 +118,13 @@
                 <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
                 <td class="author"><a href="{{url_for('profile', username=result['username'])}}">{{result['username']}}</a></td>
                 <td class="chapter-cnt">{{result['count(sid)']}}</td>
-                <!-- <td class="updated">
-                    {% if result['wip'] %}
-                    Yes
-                    {% else %}
-                    No
+                <td class="updated">
+                    {% if result['wip'] == 0 %}
+                    Work in Progress
+                    {% elif result['wip'] == 1 %}
+                    Finished
                     {% endif %}
-                </td> -->
+                </td>
             </tr> 
             {% else %}
             <tr><td>No results found</td></tr>

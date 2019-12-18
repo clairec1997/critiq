@@ -11,6 +11,9 @@
         <div class="managestory">
             <h4>{{ story['title'] }} </h4>
             <p>{{ story['summary'] }} </p>
+            {% if not story['wip'] %}
+            <a href="{{url_for('markFinished', sid=story['sid'])}}"><button class="btn btn-info">This work is finished.</button></a>
+            {% endif %}
         </div>  
     </a>
     <br>  
