@@ -20,9 +20,8 @@
     <label><h6>Genres:</h6><br>
         {% for g in genre %}
         <div class="form-check form-check-inline">
-            <label> {{ g['tname'] }}
-                <input type="checkbox" name="genre" value="{{ g['tid'] }}">
-            </label>
+            <label for="genre{{ g['tid'] }}">{{ g['tname'] }}</label>
+            <input type="checkbox" name="genre" id="genre{{ g['tid'] }}" value="{{ g['tid'] }}">
         </div>
         {% endfor %}
     </label>
@@ -32,9 +31,8 @@
     <label><h6>Audience: </h6><br>
         {% for a in audience %}
         <div class="form-check form-check-inline">
-            <label> {{ a['tname'] }}
-                <input type="radio" name="audience" value="{{ a['tid'] }}">
-            </label>
+            <label for="au{{ a['tid'] }}"> {{ a['tname'] }}</label>
+            <input type="radio" name="audience" id="au{{ a['tid'] }}" value="{{ a['tid'] }}">
         </div>
         {% endfor %}
     </label>
@@ -44,9 +42,8 @@
     <label><h6>Warnings: </h6><br>
         {% for w in warnings %}
         <div class="form-check form-check-inline">
-        <label> {{ w['tname'] }}
-            <input type="checkbox" name="warnings" value="{{ w['tid'] }}">
-        </label>
+        <label for="war{{ w['tid'] }}"> {{ w['tname'] }}</label>
+        <input type="checkbox" name="warnings" id="war{{ w['tid'] }}" value="{{ w['tid'] }}">
         </div>
         {% endfor %}
     </label>
@@ -56,9 +53,8 @@
     <label><h6>Status: </h6><br>
         {% for i in isFin %}
         <div class="form-check form-check-inline">
-        <label> {{ i['tname'] }}
-            <input type="radio" name="isFin" value="{{ i['tid'] }}">
-        </label>
+            <label for="stat{{ i['tid'] }}"> {{ i['tname'] }}</label>
+            <input type="radio" name="isFin" id="stat{{ i['tid'] }}" value="{{ i['tid'] }}">
         </div>
         {% endfor %}
     </label>
