@@ -1,0 +1,2248 @@
+from flask import (Flask, render_template, make_response, url_for, request,
+                   redirect, flash, session, send_from_directory, jsonify
+                   )
+import dbi
+from werkzeug import secure_filename
+import sys,os,random
+from threading import Thread, Lock
+
+import lookup
+import bleach
+import bcrypt
+
+UPLOAD_FOLDER = '/uploaded/'
+ALLOWED_EXTENSIONS = {'txt', 'png', 'jpg', 'jpeg', 'gif'}
+
+CONN = 'critiq_db'
+
+lock = Lock()
+
+app = Flask(__name__)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
+                                          'abcdefghijklmnopqrstuvxyz' +
+                                          '0123456789'))
+                           for i in range(20) ])
+
+# This gets us better error messages for certain common request errors
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+
+app.config['PERMANENT_SESSION_LIFETIME'] =  300000 #about a month
+
+@app.route('/', methods=["GET", "POST"])
+def index():
+
+    if request.method == "POST":
+        kind = request.form.get('search_kind')
+        term = (request.form.get('select_tag') if kind == "tag" 
+                else request.form.get('search_term'))
+        # print ("term", term)
+
+        return redirect(url_for('worksByTerm', search_kind=kind, search_term=term))    
+    else:
+        if 'username' in session:
+            return redirect( url_for('recommendations'))
+        else:
+            return render_template('main.html', page_title="Welcome to Critiq")
+
+@app.route('/getTags/', methods=["POST"])
+def getTags():
+    conn = lookup.getConn(CONN)
+    tags = lookup.getTags(conn, 'genre')
+
+    return jsonify( {'tags': tags} )
+
+@app.route('/join/', methods=["POST"])
+def join():
+    try:
+        username = request.form['username']
+        passwd1 = request.form['password1']
+        passwd2 = request.form['password2']
+        if passwd1 != passwd2:
+            flash('Passwords do not match')
+            return redirect( url_for('index'))
+        
+        #password policy
+        #This policy was not always in effect, so if you want to,
+        #you can test with legacy shorter username/password pairs
+        if len(passwd1) < 12:
+            flash('Passwords must be at least 12 characters long')
+            return redirect( url_for('index'))
+        hashed = bcrypt.hashpw(passwd1.encode('utf-8'), bcrypt.gensalt())
+        hashed_str = hashed.decode('utf-8')
+
+        conn = lookup.getConn(CONN)
+        lock.acquire()
+        try:
+            lookup.insertPass(conn, username, hashed_str)
+        except Exception as err: # this is not getting thrown
+            flash('That username is taken.')#: {}'.format(repr(err)))
+            return redirect(url_for('index'))
+        uid = lookup.getUIDFirst(conn)
+        lock.release()
+        # print(uid)
+        flash('FYI, you were issued UID {}'.format(uid))
+        session['username'] = username
+        session['uid'] = uid
+        session['logged_in'] = True
+        # session['visits'] = 1
+        return redirect( url_for('profile', username=username) )
+    except Exception as err:
+        flash('Form submission error '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/login/', methods=["POST"])
+def login():
+    try:
+        username = request.form['username']
+        passwd = request.form['password']
+        conn = lookup.getConn(CONN)
+        row = lookup.getLogin(conn, username)
+        if row is None:
+            # Same response as wrong password,
+            # so no information about what went wrong
+            flash('Login incorrect. Try again or join')
+            return redirect( url_for('index'))
+        hashed = row['passhash'] 
+        
+        hashed2 = bcrypt.hashpw(passwd.encode('utf-8'),hashed.encode('utf-8'))#.encode('utf-8'))
+        hashed2_str = hashed2.decode('utf-8')
+        
+        if hashed2_str == hashed:
+            flash('Successfully logged in as '+username)
+            session['username'] = username
+            session['uid'] = row['uid']
+            uid=session['uid']
+
+            unwanted = lookup.getPrefs(conn, uid, True)
+            session['filters'] = unwanted
+            # print (session)
+
+            session['logged_in'] = True
+            session.permanent = True
+            return redirect( url_for('recommendations') )
+        else:
+            flash('Login incorrect. Try again or join')
+            return redirect( url_for('index'))
+    except Exception as err:
+        flash('Form submission error: '+str(err))
+        return redirect( url_for('index') )
+
+
+@app.route('/profile/<username>', methods = ["GET", "POST"]) #allow everyone to access all profiles, only let logged in users change own data
+def profile(username):
+    conn = lookup.getConn(CONN)
+    try:
+        if request.method == "POST":
+            # if either prefs or warnings were updated
+            if 'uid' in session:
+                uid = session['uid']
+
+                if request.form.get('submit-btn') == "Update Preferences":
+                    lookup.updatePrefs(conn, uid, request.form.getlist('pref[]'), False)
+                else:
+                    lookup.updatePrefs(conn, uid, request.form.getlist('warning[]'), True)
+                    
+                    session['filters'] = lookup.getPrefs(conn, uid, True)                
+
+                flash('Your preferences have been updated!')      
+        
+        # don't trust the URL; it's only there for decoration
+        if 'username' in session:
+            currentUsername = session['username']
+            uid = lookup.getUID(conn, username)
+            
+            # retrieve user's current prefs and content filters
+            prefs = lookup.getPrefs(conn, uid, False)
+            warns = lookup.getPrefs(conn, uid, True)
+
+            # get all genre tags and warnings
+            allTags = lookup.getTags(conn, 'genre')
+
+            allWarns = lookup.getTags(conn, 'warnings')
+
+            # default values if profile does not already have any prefs or content filters 
+            prefTags = [(tag, False) for tag in allTags]
+            warnTags = [(tag, False) for tag in allWarns]
+
+            # set up current prefs and content filters for auto-population
+            if prefs: 
+                prefTags = ([((tag, True) if tag['tid'] in prefs else (tag, False))
+                            for tag in allTags])
+
+            if warns:
+                warnTags = ([((tag, True) if tag['tid'] in warns else (tag, False))
+                            for tag in allWarns])
+            
+
+            stories = lookup.getStories(conn, uid)
+            return render_template('profile.html',
+                                page_title="{}'s Profile".format(username),
+                                username=username, uid=uid, prefs=prefTags, 
+                                warnings=warnTags, stories=stories, 
+                                currentUsername=currentUsername
+                                )
+        else:
+            flash('You are not logged in. Please login or join')
+            return redirect( url_for('index') )
+    except Exception as err:
+        flash('Some kind of error '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/updateProfile/', methods=["POST"])
+def updateProfile():
+    if 'uid' in session:
+        conn = lookup.getConn(CONN)
+        uid = session['uid']
+        dob = request.form.get('dob')
+
+        lookup.updateProfile(conn, uid, dob)
+        username = session['username']
+        return redirect( url_for('profile', username=username))
+    else:
+        flash('Log in to bookmark works.')
+        return redirect(url_for('index'))
+
+@app.route('/manage/')
+def manage():
+    try:
+        if 'uid' in session:
+            uid = session['uid']
+            conn = lookup.getConn(CONN)
+            stories = lookup.getStories(conn, uid)
+            return render_template('manage.html', stories=stories, page_title="Manage My Stories")
+        else: 
+            flash("Please log in or join")
+            return redirect(url_for('index'))
+    except Exception as err:
+        flash('Error: '+str(err))
+        return redirect( url_for('index') )
+    
+@app.route('/add/', methods=["GET", "POST"])
+def add():
+    try:
+        if request.method == "GET":
+            if 'uid' in session:
+                uid = session['uid']
+                conn = lookup.getConn(CONN)
+                genre = lookup.getTags(conn, 'genre')
+                warnings = lookup.getTags(conn, 'warnings')
+                audience = lookup.getTags(conn, 'audience')
+                isFin = lookup.getTags(conn, 'isFin')
+                return render_template('add.html', warnings=warnings, 
+                                    genre=genre, audience=audience, isFin=isFin, page_title="Add a Story")
+            else:
+                flash("Please log in or join")
+                return redirect(url_for('index'))
+                
+        if request.method == "POST":
+            uid = session['uid']
+            title = request.form['title']
+            summary = request.form['summary']
+            genre = request.form.getlist('genre')
+            audience = request.form['audience']
+            warnings = request.form.getlist('warnings')
+            status = request.form['isFin']
+            if status == '32':
+                status = 1 #work is finished
+            elif status == '33':
+                status = 0 #work is in progress
+        
+            conn = lookup.getConn(CONN)
+            sid = lookup.addStory(conn, uid, title, summary, status)[0]
+            lookup.addTags(conn, sid, genre, warnings, audience, status)
+
+            return redirect(url_for('update', sid=sid))
+    except Exception as err:
+        flash('Error: '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/update/<int:sid>/', defaults={'cnum':1}, methods=["GET","POST"])
+@app.route('/update/<int:sid>/<int:cnum>/', methods=["GET","POST"])
+def update(sid, cnum):
+    try:
+        conn = lookup.getConn(CONN)
+        authorid = lookup.getAuthorId(conn,sid)[0]
+        # print(authorid, session['uid'])
+
+        if 'uid' in session and session['uid']==authorid:
+            if request.method=="GET":
+                chapter = lookup.getChapter(conn, sid, cnum)
+                story = ""
+                if chapter:
+                    with open(chapter['filename'], 'r') as infile:
+                        # print("From db: "+chapter['filename'])
+                        story = infile.read()
+                        # print("Read for Update" + story)
+                allch = lookup.getChapters(conn, sid)
+                title = lookup.getTitle(conn, sid)
+                return render_template('write.html', sid=sid, cnum=cnum, story=story, 
+                                        allch=allch, title=title['title'], page_title="Update '{}'".format(title['title']))
+
+            if request.method=="POST":
+                sometext = request.form['write']
+                somehtml = bleach.clean(sometext, #allowed tags, attributes, and styles
+                    tags=['b','blockquote','i','em','strong','p','ul','br','li','ol','span', 'pre'], 
+                    attributes=['style'],
+                    styles=['text-decoration', 'text-align'])
+
+                dirname = os.path.dirname(__file__)
+                relative = 'uploaded/'+'sid'+str(sid)+'cnum'+str(cnum)+'.html'
+                filename = os.path.join(dirname, relative)
+                # print(filename)
+
+                with open(filename, 'w') as outfile:
+                    outfile.write(somehtml)
+                    # print("Where it's written:" + filename)
+                    # print("Write for Update" + somehtml)
+                
+                lock.acquire()
+                chapter = lookup.getChapter(conn,sid,cnum)
+
+                if chapter:
+                    cid = chapter['cid']
+                if not chapter:
+                    cid = None
+
+                lookup.setChapter(conn, sid, cnum, cid, filename)
+                # print("ok i got this")
+                lock.release()
+                return redirect(url_for('read', sid=sid, cnum=cnum))
+        else: 
+            flash('''You are not authorized to edit this work. 
+                    Please log in with the account associated with this work''')
+            return redirect(url_for('index'))
+    except Exception as err:
+        flash('Some kind of error '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/read/<int:sid>', defaults={'cnum': 1}, methods=["GET", "POST"])
+@app.route('/read/<int:sid>/<int:cnum>/', methods=["GET", "POST"])
+def read(sid, cnum): 
+    conn = lookup.getConn(CONN)
+
+    try:
+        chapter = lookup.getChapter(conn, sid, cnum)
+        cid = chapter['cid']
+        try:
+            #check if they're logged in
+            if 'username' not in session:
+                return redirect(url_for('index'))
+
+            uid = session['uid']
+
+            #add to history
+            print(lookup.addToHistory(conn, uid, sid, cid))
+
+            #check if they've rated the piece already
+            rating = lookup.getRating(conn, sid, uid)
+            if rating is not None:
+                rating = rating['rating']
+                avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
+            else:
+                avgRating = None
+
+            #these are the comments the user has posted on this chapter
+            comments = lookup.getComments(conn, uid, cid)
+
+            story = ""
+
+            with open(chapter['filename'], 'r') as infile:
+                story = infile.read()
+                # print("Read for Reading:" + story)
+
+            isBookmarked = lookup.isBookmarked(conn,sid,uid)
+
+            allch = lookup.getChapters(conn,sid)
+            numChap = lookup.getNumChaps(conn, sid)['count(cid)']
+            work = lookup.getStory(conn, sid)
+            
+            #only display all comments on a work if the author is viewing
+            #otherwise, users can only see the comments they've written
+            if uid == work['uid']:
+                allComments = lookup.getAllComments(conn, cid)
+            else:
+                allComments = None
+
+            if session['username'] == work['username']:
+                isUpdate = True
+            else:
+                isUpdate = False
+            return render_template('read.html', 
+                                    page_title=work['title'], 
+                                    story=story,
+                                    chapter=chapter,
+                                    author=work['username'],
+                                    cnum=cnum,
+                                    isBookmark=isBookmarked,
+                                    sid=sid,
+                                    update=isUpdate,
+                                    allch=allch,
+                                    comments=comments,
+                                    uid=uid,
+                                    maxCh=numChap,
+                                    allComments=allComments,
+                                    old_rating=rating,
+                                    avgRating=avgRating)
+        except Exception as err:
+            # print(err)
+            return redirect( url_for('index') )
+    except Exception as err:
+        return redirect( url_for('notFound') )
+
+@app.route('/404/')
+def notFound():
+    '''Lets user know that something is wrong when they try to
+    access a chapter/story that doesn't exist; 
+    redirecting them to index would be confusing.'''
+    return render_template('404.html', page_title='404')
+
+@app.route('/bookmarks/')
+def bookmarks():
+    if 'uid' in session:
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        username = session['username'] if 'username' in session else ''
+
+        books = lookup.getBookmarks(conn, uid)
+              
+        if not books:
+            flash("No bookmarked works were found")
+        
+        return render_template('bookmarks.html',
+                                res=books,
+                                page_title="{}'s Bookmarks".format(username))
+    else:
+        flash("Please log in")
+        return redirect(url_for('index'))
+
+@app.route('/recommendations/', methods=["GET", "POST"])
+def recommendations():
+    if 'uid' in session:
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        warnings = lookup.getTags(conn, 'warnings')
+        username = session['username'] if 'username' in session else ''
+
+        recs = lookup.getRecs(conn, uid, session['filters'])
+              
+        if not recs:
+            flash("No works fitting your preferences were found")
+        
+        return render_template('search.html',
+                                    resKind="Recs", res = recs, warnings=[],
+                                    page_title="{}'s Home".format(username))
+
+    return redirect(url_for('index'))
+
+@app.route('/addComment/', methods=["POST"])
+def addComment():
+    conn = lookup.getConn(CONN)
+    commentText = request.form["commentText"]
+    cid = request.form['chapcid']
+
+    if 'uid' in session:
+        uid = session['uid']
+        lookup.addComment(conn, commentText, uid, cid)
+        flash('Comment submitted!')
+        return redirect(request.referrer)
+    else:
+        return redirect(url_for('index'))
+
+@app.route('/rateAjax/', methods=["POST"])
+def rateAjax():
+    conn = lookup.getConn(CONN)
+    rating = request.form.get('rating')
+    sid = request.form.get('sid')
+    uid = session['uid']
+
+    lookup.addRating(conn, uid, sid, rating)
+    avgRating = float(lookup.calcAvgRating(conn, sid)['avg(rating)'])
+    lookup.updateAvgRating(conn, sid, avgRating)
+    return jsonify(rating=rating, avgRating=avgRating)
+    
+
+@app.route('/logout/')
+def logout():
+    try:
+        if 'username' in session:
+            username = session['username']
+            session.pop('username')
+            session.pop('uid')
+            session.pop('logged_in')
+            flash('You are logged out')
+            return redirect(url_for('index'))
+        else:
+            flash('You are not logged in. Please login or join')
+            return redirect( url_for('index') )
+    except Exception as err:
+        flash('Some kind of error '+str(err))
+        return redirect( url_for('index') )
+
+@app.route('/search/<search_kind>/', defaults={'search_term': ""}, methods=["GET", "POST"])
+@app.route('/search/<search_kind>/<search_term>', methods=["GET", "POST"])
+def worksByTerm(search_kind, search_term):
+    '''searches for works by work, author or tag. if no term then default to all'''
+    if 'uid' in session:
+        term = search_term
+
+        kind = search_kind
+        conn = lookup.getConn(CONN)
+        
+        filters = []
+        completion = None
+        audience = None
+        sortBy = None
+        exclude = session['filters'] if 'filters' in session else []
+        
+        if (request.method == "POST") and not (kind == "author"):
+            filters = request.form.getlist('warnings[]')
+            sortBy = request.form.get('sortby')
+            completion = request.form.get('finished')
+            audience = request.form.get('audience')
+
+        res = (lookup.searchAuthors(conn, term) if kind == "author" 
+        else lookup.searchWorks(conn, kind, term, set(filters + exclude))
+        )
+        # print (str(res))
+
+        if not kind == "author":
+            # print("pre everything\n", str(res))
+            if completion:
+
+                res = ([work for work in res if not work['wip']] 
+                        if completion == 'wip' else
+                        [work for work in res if work['wip']])
+            # print ("completion\n", str(res))
+            if audience:
+                res = [work for work in res if work['audience'] == audience]
+
+
+            if sortBy:
+                if sortBy == 'avgRating':
+                    for work in res:
+                        if work.get('avgRating') == None:
+                            work.update({'avgRating': 0})
+                
+                # print ("checking\n {}".format(str(res)))
+
+                res = sorted(res, reverse = True, key = lambda work: work[sortBy])
+                # print ("sorted byyyyy\n {}".format(str(res)))
+
+
+        resKind = "Authors" if kind == "author" else "Works"
+        nm = "Tag" if (kind == "tag") else "Term"
+
+        if not res:
+            flash("No {} Found Including {}: {} :( ".format(resKind, nm, term))
+        
+        return render_template('search.html', resKind=resKind, term=term, 
+                                res=res, warnings=lookup.getTags(conn, 'warnings'),
+                                page_title="Search")
+    else:
+        flash('Log in to search.')
+        return redirect(url_for('index'))
+
+@app.route('/chapIndex/', methods=["POST"])
+def chapIndex():
+    sid = request.form.get('sid')
+    cnum = request.form.get('cid')
+    # print(sid, cnum)
+    return redirect( url_for('read', sid=sid, cnum=cnum))
+
+@app.route('/history/', methods = ["GET"])
+def history():
+    if 'uid' in session:
+        uid = session['uid']
+        conn = lookup.getConn(CONN)
+        hist = lookup.getHistory(conn, uid)
+        username = session['username'] if 'username' in session else ""
+        return render_template('history.html',
+                                history=hist,
+                                page_title="{}'s History".format(username))
+    else:
+        return redirect(url_for('index'))
+
+@app.route('/markHelpful/', methods=["POST"])
+def markHelpful():
+    '''allows authors to mark particular comments as helpful or unhelpful'''
+    conn = lookup.getConn(CONN)
+
+    helpful = request.form.get('helpful')
+    rid = request.form.get('rid') #review id
+    
+    lookup.changeHelpful(conn, rid, helpful)
+    return jsonify(helpful=helpful, rid=rid)
+
+@app.route('/addBookmark/', methods=["POST"])
+def addBookmark():
+    if 'uid' in session:
+        book = request.form['changemark']
+        uid = session['uid']
+        sid = request.form['sid']
+
+        conn = lookup.getConn(CONN)
+        isBooked = lookup.isBookmarked(conn, sid, uid)
+
+        if isBooked and book == "Bookmarked":
+            lookup.removeBookmark(conn, sid, uid)
+            flash("Bookmark removed")
+        elif isBooked is None and book == "Add Bookmark":
+            lookup.addBookmark(conn, sid, uid)
+            flash("Bookmark added")
+        else:
+            flash("Bookmark unchanged")
+
+        return redirect(request.referrer)
+    else:
+        flash('Log in to bookmark works.')
+        return redirect(url_for('index'))
+
+@app.route('/markFinished/<sid>/')
+def markFinished(sid):
+    if 'uid' in session:
+        conn = lookup.getConn(CONN)
+        lookup.setFinished(conn, sid)
+        return(redirect(url_for('manage')))
+    else:
+        flash('Log in to manage your works.')
+        return redirect(url_for('index'))
+
+if __name__ == '__main__':
+
+    if len(sys.argv) > 1:
+        # arg, if any, is the desired port number
+        port = int(sys.argv[1])
+        assert(port>1024)
+    else:
+        port = os.getuid()
+    app.debug = True
+    app.run('0.0.0.0',port)
+import dbi
+from datetime import *
+
+DSN = None
+
+# We need to add transaction locking eventually
+
+def getConn(db):
+    '''returns a database connection to the given database'''
+    global DSN
+    if DSN is None:
+        DSN = dbi.read_cnf()
+    conn = dbi.connect(DSN)
+    conn.select_db(db)
+    return conn
+
+# ------------------------ Passwords and UIDs
+
+def insertPass(conn, username, hashed_str):
+    '''inserts user into database when they make an account'''
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables users')
+    curs.execute('''INSERT INTO users(uid,username,passhash)
+                            VALUES(null,%s,%s)''',
+                         [username, hashed_str])
+    curs.execute('unlock tables')
+
+def getUIDFirst(conn):
+    '''gets last inserted uid'''
+    curs = dbi.cursor(conn)
+    curs.execute('select LAST_INSERT_ID()')
+    row = curs.fetchone()
+    print(row)
+    uid = row[0]
+    return uid
+
+def getUID(conn, username):
+    curs = dbi.cursor(conn)
+    curs.execute('''select uid from users where username=%s''', [username])
+    return curs.fetchone()
+
+def getLogin(conn, username):
+    '''gets hashed password to check for login'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''SELECT uid,passhash
+                      FROM users
+                      WHERE username = %s''',
+                     [username])
+    return curs.fetchone()
+
+# ------------------ Profiles and Preferences
+
+def updateProfile(conn, uid, dob):
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables users write')
+    curs.execute('''update users
+                    set dob=%s
+                    where uid=%s''', [dob, uid])
+    curs.execute('unlock tables')
+
+def getStories(conn, uid):
+    '''Returns all works associated with an account'''
+    curs=dbi.dictCursor(conn)
+    curs.execute('''select * from works
+                where uid = %s''', [uid])
+    return curs.fetchall()
+
+def getPrefs(conn, uid, wantsWarnings):
+    '''given uid, retrieves users prefs or warning'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select tid from 
+                prefs left outer join tags 
+                using(tid) where uid=%s and isWarning=%s''', 
+                [uid, wantsWarnings])
+    return [tag['tid'] for tag in curs.fetchall()]
+    
+def updatePrefs(conn, uid, prefs, isWarnings):
+    '''updates user preferences'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables prefs write')
+    curs.execute('''delete from prefs where uid=%s and isWarning=%s''',
+                [uid, isWarnings])
+    for pref in prefs:
+        curs.execute('''insert into prefs values(%s, %s, %s)''',
+                    [uid, pref, isWarnings])
+    curs.execute('unlock tables')
+    # return getPrefs(conn, uid)
+
+# --------------------------- Searching and Recommended Works
+
+def searchWorks(conn, kind, searchterm, filters):
+    '''finds works with the title including searchterm or tag = searchterm 
+        takes chosen filters into acct'''
+    curs = dbi.dictCursor(conn)
+
+    dofilter = ("where sid not in (select sid from taglink where tid in %s)" 
+                if filters else "")
+
+
+    searchParam =  (['%' + searchterm + '%'] if kind == "work" 
+                        else [searchterm])     
+
+    params = ([searchParam, filters] if filters else [searchParam])
+
+    if kind == "work":
+        curs.execute('''select * from (select sid, uid, title, updated, 
+                    summary, stars, wip, avgRating, count(sid) from
+                    (select * from works where title like %s) as q1 
+                    left outer join chapters using(sid) group by sid) as q2 
+                    left outer join (select uid, username from users) as q3 
+                    using(uid) left outer join 
+                    (select sid, tname as audience from (select * from tags 
+                    where ttype='audience') as q4
+                    left outer join taglink using(tid)) as q5
+                    using(sid) ''' + dofilter, 
+                params)
+    else:
+        curs.execute('''select * from (select sid, uid, title, updated, 
+                        summary, stars, wip, avgRating, count(sid) from 
+                        (select tid from tags where tname = %s) as q1 
+                        left outer join taglink using(tid) 
+                        left outer join works using(sid) 
+                        left outer join chapters using(sid) group by sid) as q3 
+                        left outer join (select uid, username from users) as q4 
+                        using(uid) left outer join 
+                        (select sid, tname as audience from (select * from tags 
+                        where ttype='audience') as q4 
+                        left outer join taglink using(tid)) as q5 using(sid) ''' + dofilter, 
+                        params)
+            
+    return curs.fetchall()
+
+def getRecs(conn, uid, filters):
+    '''gets recommended stories'''
+    curs = dbi.dictCursor(conn)
+    currentPrefs = getPrefs(conn, uid, False)
+    if currentPrefs:
+        isFilters = (" where sid not in (select sid from taglink where tid in %s) " 
+                    if filters else "")
+
+        curs.execute('''select * from (select sid, uid, title, updated, summary, 
+                        stars, avgRating, count(sid), username, wip from 
+                        (select sid from taglink where tid in %s group by sid) as q1 
+                        left outer join works using(sid) 
+                        left outer join 
+                        (select uid, username from users) as q2 
+                        using (uid) 
+                        left outer join chapters using(sid) group by sid) as q3 ''' 
+                        + isFilters + 
+                        '''order by avgRating desc''', 
+                        ([currentPrefs, filters] if filters else [currentPrefs]))
+        res = curs.fetchall()
+        return res
+    else:
+        return {}
+
+def searchAuthors(conn, author):
+    '''finds authors matching name'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select uid, username from users where 
+                 username like %s''', 
+                 ['%' + author + '%'])
+    return curs.fetchall()
+
+def getTags(conn, type):
+    '''given a tag type, gets tags of that type'''
+    curs=dbi.dictCursor(conn)
+    curs.execute('select * from tags where ttype=%s',[type])
+    return curs.fetchall()
+
+def getAuthor(conn, sid):
+    '''given an sid, gets the username'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select username from works inner join users using (uid)
+                    where sid=%s''', [sid])
+    return curs.fetchone()
+
+def getAuthorId(conn, sid):
+    '''given an sid, gets the uid'''
+    curs = dbi.cursor(conn)
+    curs.execute('''select uid from works inner join users using (uid)
+                    where sid=%s''', [sid])
+    return curs.fetchone()
+
+def getWarnings(conn, uid):
+    '''given uid, retrieves users prefs'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select tid, tname from 
+                prefs left outer join tags 
+                using(tid) where uid=%s''', 
+                [uid])
+    return curs.fetchall()
+
+# ----------------------- Reading Stories
+
+def getStory(conn, sid):
+    '''Returns a work with given sid'''
+    curs=dbi.dictCursor(conn)
+    curs.execute('''select * from works inner join users
+                    on users.uid=works.uid where sid=%s''', [sid])
+    return curs.fetchone()
+
+def getChapter(conn, sid, cnum):
+    '''returns a chapter of a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select works.title as title,
+                    works.wip as wip,
+                    works.summary as summary, 
+                    works.wip as wip,
+                    works.title as title, 
+                    chapters.filename as filename,
+                    chapters.cid as cid
+                    from works inner join chapters using (sid)
+                    where sid=%s and cnum=%s
+                    ''', [sid, cnum])
+    return curs.fetchone()
+
+def getChapters(conn, sid):
+    '''given sid, gets all chapters'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select * from chapters 
+                where sid=%s
+                order by cnum asc''',[sid])
+    return curs.fetchall()
+
+def getNumChaps(conn, sid):
+    '''returns the number of chapters for a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select count(cid) from chapters where sid=%s''', [sid])
+    return curs.fetchone()
+
+def getTitle(conn, sid):
+    '''retrieves story title'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select title from works where sid=%s''', [sid])
+    return curs.fetchone()
+
+# -------------------- Adding and Updating Stories
+
+def setChapter(conn, sid, cnum, cid, filename):
+    '''Given sid, cnum, filename, sets the chapter'''
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables chapters write')
+
+    isTrans = False
+
+    if cid is None:
+        isTrans = True
+        curs.execute('start transaction')
+        curs.execute('select max(cid) from chapters')
+        cid = curs.fetchone()[0] + 1
+    
+    curs.execute('''insert into chapters(sid, cnum, cid, filename)
+                values (%s, %s, %s, %s)
+                on duplicate key update
+                filename=%s''',
+                [sid, cnum, cid, filename, filename])
+    
+    lastUpdated(conn, sid)
+    if isTrans == True:
+        curs.execute('commit')
+    curs.execute('unlock tables')
+
+def lastUpdated(conn, sid):
+    '''changes updated to current date whenever a work is updated '''
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables works write')
+    curs.execute('''update works set updated = %s where sid = %s''',
+                [datetime.now(), sid])
+    curs.execute('unlock tables')
+
+def addStory(conn, uid, title, summary, isFin):
+    '''given a uid, title, summary, adds the story'''
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables works write')
+    curs.execute('''insert into works(uid, title, updated, summary, wip, avgRating)
+                    values (%s, %s, %s, %s, %s, 0)''', 
+                    [uid, title, datetime.now(), summary, isFin])
+    curs.execute('select last_insert_id()')
+    curs.execute('unlock tables')
+    return curs.fetchone()
+
+def setFinished(conn, sid):
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables works write')
+    curs.execute('''update works set wip=1 where sid=%s''', [sid])
+    curs.execute('unlock tables')
+
+# def getTagsAjax(conn):
+#     '''given a conn, gets all tag names'''
+#     curs = dbi.dictCursor(conn)
+#     curs.execute('''select tname from tags''')
+#     return curs.fetchall()
+    
+def addTags(conn, sid, genre, warnings, audience, isFin):
+    '''adds tags to a story'''
+    curs = dbi.cursor(conn)
+    curs.execute('lock tables taglink write')
+    tagslist = [*genre, *warnings, *audience, *isFin]
+    for i in tagslist:
+        curs.execute('''insert into taglink(tid, sid)
+        values (%s, %s)''', [i, sid])
+    curs.execute('unlock tables')
+
+# ------------------------- Comments
+
+def addComment(conn, commentText, uid, cid):
+    '''adds a comment to a chapter'''
+    curs = dbi.cursor(conn)
+    # print(uid)
+    # print(cid)
+    curs.execute('lock tables reviews write, reviewCredits write')
+    curs.execute('''insert into reviews(commenter, reviewText) values(%s, %s)''', [uid, commentText])
+    curs.execute('select LAST_INSERT_ID()')
+    row = curs.fetchone()
+    rid = row[0]
+    curs.execute('''insert into reviewCredits values(%s, %s)''', [rid, cid])
+    curs.execute('unlock tables')
+
+def getComments(conn, uid, cid):
+    '''gets comments for the chapter with a certain commenter'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select reviewText from reviews inner join reviewCredits using(rid)
+                    where commenter=%s and cid=%s
+                    ''', [uid, cid])
+    return curs.fetchall()
+
+def calcAvgRating(conn, sid):
+    '''calculates the average rating of a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select avg(rating) from ratings
+                        inner join works using(sid)
+                        where sid=%s''', [sid])
+    return curs.fetchone()
+
+def updateAvgRating(conn, sid, avg):
+    '''updates the average rating for a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables works write')
+    curs.execute('''update works set avgRating=%s 
+                    where sid=%s''', [avg, sid])
+    curs.execute('unlock tables')
+
+def addRating(conn, uid, sid, rating):
+    '''adds a rating to a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables ratings write')
+    curs.execute('''select * from ratings where sid=%s and uid=%s''', [sid, uid])
+    if curs.fetchone() is not None:
+        curs.execute('''update ratings set rating=%s 
+                    where sid=%s and uid=%s''', [rating, sid, uid])
+    else:
+        curs.execute('''insert into ratings(uid, sid, rating) 
+                        values(%s, %s, %s)''', [uid, sid, rating])
+    curs.execute('unlock tables')
+
+def getAllComments(conn, cid):
+    '''gets all comments for a chapter'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select reviews.reviewText as reviewText, reviews.rid as rid, 
+                        users.username as commenter, reviews.ishelpful as ishelpful
+                        from reviews inner join reviewCredits using(rid)
+                        inner join users on reviews.commenter=users.uid
+                        where cid=%s
+                        ''', [cid])
+    return curs.fetchall()
+
+def changeHelpful(conn, rid, helpful):
+    '''sets a review as helpful or not helpful'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables reviews write')
+    curs.execute('''update reviews set ishelpful=%s where rid=%s''', [helpful, rid])
+    curs.execute('unlock tables')
+
+def getRating(conn, sid, uid):
+    '''gets a rating for a story'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select rating from ratings where sid=%s and uid=%s''',[sid, uid])
+    return curs.fetchone()
+
+# ----------------------------------- History
+
+def addToHistory(conn, uid, sid, cid):
+    '''adds a chapter to history'''
+    now = datetime.now()
+    #frmat = now.strftime('%Y-%m-%d %H:%M:%S')
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables history write')
+    curs.execute('''insert into history values(%s, %s, %s, %s) 
+                    on duplicate key update visited = %s''',
+                    [uid, sid, cid, now, now])
+    curs.execute('unlock tables')
+
+def getHistory(conn, uid):
+    '''gets a user's history'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select sid, cid, uid, title, updated, summary, 
+                    stars, count(sid), username, visited from  
+                    (select sid, visited from history where uid = %s) as q1
+                    left outer join works using(sid)
+                    left outer join 
+                    (select uid, username from users) as q2 
+                    using(uid) 
+                    left outer join chapters using(sid) group by sid
+                    order by visited desc''', 
+                    [uid])
+    return curs.fetchall()
+    
+# ----------------------------- Bookmarks
+
+def addBookmark(conn, sid, uid):
+    '''adds a bookmark'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables bookmarks write')
+    curs.execute('''insert into bookmarks(sid, uid)
+                    values (%s,%s)''', 
+                    [sid, uid])
+    curs.execute('unlock tables')
+
+def removeBookmark(conn, sid, uid):
+    '''removes a bookmark'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('lock tables bookmarks write')
+    curs.execute('''delete from bookmarks
+                    where sid=%s and uid=%s''', 
+                    [sid, uid])
+    curs.execute('unlock tables')
+
+def isBookmarked(conn, sid, uid):
+    '''checks if a work is bookmarked'''
+    curs = dbi.cursor(conn)
+    curs.execute('''select * from bookmarks 
+                where sid=%s and uid=%s''',
+                [sid,uid])
+    return curs.fetchone()
+
+def getBookmarks(conn, uid):
+    '''gets a list of bookmarks'''
+    curs = dbi.dictCursor(conn)
+    curs.execute('''select sid, username, title, summary from bookmarks
+                    inner join works using (sid)
+                    inner join users on (works.uid = users.uid)
+                    where bookmarks.uid=%s''', [uid])
+    return curs.fetchall(){% extends 'base.html' %}
+
+{% block content %}
+<br><br>
+<h1>Sorry, it looks like that page doesn't exist.</h1>
+{% endblock %}{% extends 'base.html' %}
+
+{% block content %}
+
+<form action="" method="POST">
+    <h1>Add a Story</h1>
+
+    <div class="form-group">
+        <label for="titleid"><h6>Title: </h6></label>
+        <input type="text" name="title" id ="titleid" class="form-control" required>
+    </div>
+    
+    <div class="form-group">
+        <label for="summaryid"><h6>Summary: </h6></label>
+        <textarea name="summary" id="summaryid" class="form-control" rows=8 required></textarea>
+    </label> 
+    </div>
+
+    <div class="form-group">
+    <fieldset><legend><h6>Genres:</h6></legend><br>
+        {% for g in genre %}
+        <div class="form-check form-check-inline">
+            <label for="genre{{ g['tid'] }}">{{ g['tname'] }}</label>
+            <input type="checkbox" name="genre" id="genre{{ g['tid'] }}" value="{{ g['tid'] }}">
+        </div>
+        {% endfor %}
+    </fieldset>
+    </div>
+
+    <div class="form-group">
+    <fieldset><legend><h6>Audience: </h6></legend><br>
+        {% for a in audience %}
+        <div class="form-check form-check-inline">
+            <label for="au{{ a['tid'] }}"> {{ a['tname'] }}</label>
+            <input type="radio" name="audience" id="au{{ a['tid'] }}" value="{{ a['tid'] }}">
+        </div>
+        {% endfor %}
+    </fieldset>
+    </div>
+
+    <div class="form-group">
+    <fieldset>
+        <legend><h6>Warnings: </h6></legend><br>
+        {% for w in warnings %}
+        <div class="form-check form-check-inline">
+        <label for="war{{ w['tid'] }}"> {{ w['tname'] }}</label>
+        <input type="checkbox" name="warnings" id="war{{ w['tid'] }}" value="{{ w['tid'] }}">
+        </div>
+        {% endfor %}
+    </fieldset>
+    </div>
+
+    <div class="form-group">
+    <fieldset><legend><h6>Status: </h6></legend><br>
+        {% for i in isFin %}
+        <div class="form-check form-check-inline">
+            <label for="stat{{ i['tid'] }}"> {{ i['tname'] }}</label>
+            <input type="radio" name="isFin" id="stat{{ i['tid'] }}" value="{{ i['tid'] }}">
+        </div>
+        {% endfor %}
+    </fieldset>
+    </div>
+
+    <input type="submit" value="Submit" class="btn btn-info">
+</form>
+
+{% endblock %}<!doctype html>
+<html lang='en'>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Claire Cannatti and Sophia Bussey and Svetha Pulavarty">
+    <meta name="description" content="A site for posting and critiquing creative writing.">
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self' blob:; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';" > -->
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{url_for('static', filename = 'style.css')}}">
+    <link rel="icon" href="{{url_for('static', filename = 'images/critiq_icon.png')}}">
+    {% block head_stuff %} {% endblock %}
+    <title>{{page_title}}</title>
+    
+</head>
+<body>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+  <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js" referrerpolicy="origin"></script>
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <!-- <a class="navbar-brand" href="#" > </a> -->
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation" >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+    
+          <div class="collapse navbar-collapse" id="navbarSupportedContent"> 
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item active">
+                <a class="nav-link" href="{{url_for('index')}}"><img src="{{url_for('static', filename = 'images/critiq_logo_half_green.png')}}" height="50" alt="critiq logo link to home page"><span class="sr-only">(current)</span></a>
+              </li>
+              <li class="nav-item nonactive">
+                <form id="search-form" method="POST" action="{{url_for('index')}}" class="form-inline my-2 my-lg-0">
+		              <!-- <fieldset> -->
+                <div class="inline"><label id="searchlabel">
+                    Search For: <div class="inline"><input id="term" name="search_term" value="" class="form-control"></div>
+                  </label></div>
+                  <div class="inline"><label id="selTag">
+                    Select Desired Tag: 
+                    <div class="inline"><select id="select_tag" name="select_tag" class="form-control">
+                      <option value="">Select a Tag</option>
+                    </select></div>
+                  </label></div>
+                  <fieldset name="srch" style="display: inline;">
+                  <div class="inline"><label>
+                      <div class="inline"><input required type="radio" name="search_kind" value="work">
+                      Title</div>
+                  </label></div>
+                </fieldset>
+                <fieldset name="srch" style="display: inline;">
+                  <div class="inline"><label>
+                      <div class="inline"><input required type="radio" name="search_kind" value="author">
+                      Author </div>
+                  </label></div>
+                </fieldset>
+                <fieldset name="srch" style="display: inline;">
+                  <div id="formtag" class="inline"><label>
+                      <div class="inline"><input required type="radio" name="search_kind" value="tag">
+                    Tag </div>
+                  </label></div>
+                </fieldset>
+                 
+                  <div class="inline"><input type="submit" name="submit-btn" value=" Search" class="btn btn-secondary"></div>
+                </form>
+              </li>
+              {% if 'uid' in session %}
+                <li class="nav-item dropdown nonactive">
+                  <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Profile</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                      
+                      <a class="dropdown-item" href="{{url_for('profile', username=session['username'])}}">My Profile</a>
+                      <a class="dropdown-item" href="{{url_for('history')}}">My History</a>
+                      <a class="dropdown-item" href="{{url_for('manage')}}">Manage My Stories</a>
+                      <a class="dropdown-item" href="{{url_for('bookmarks')}}">My Bookmarks</a>
+                      <a class="dropdown-item" href="{{url_for('recommendations')}}">My Recommendations</a>
+                      <a class="dropdown-item" href="{{url_for('logout')}}">Log out</a>
+                      
+                    </div>
+                  </li>
+                {% endif %}
+            </ul>
+          </div>
+    
+        </nav>
+
+        {% with messages = get_flashed_messages() %}
+    {% if messages %}
+        <div id="messages">
+        {% for msg in messages %}
+            <p>{{msg}}</p>
+        {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+        
+<div class="row">
+  <div class="col-xl-2 col-lg-2 col-md-1 col-sm-1 col-xs-1"></div>
+
+  <div class="col-xl-8 col-lg-8 col-md-10 col-sm-10 col-xs-10">
+    {% block content %}
+    <h1>Welcome!</h1>
+    {% endblock %}
+    
+
+  </div>
+
+  <div class="col-xl-2 col-lg-2 col-md-1 col-sm-1 col-xs-1"></div>
+</div>
+
+<br><br>
+
+
+<script>
+//if javascript enabled, allow search by tag
+$("div#formtag").show();
+
+var URL = "{{url_for('getTags')}}"
+
+$("input[value='tag']").on("click", function (event) {
+    $.ajax({
+        type: "POST",
+        url: URL, 
+        data: JSON.stringify({'tags': {}}), 
+        contentType: 'application/json; charset=UTF-8',   
+        success: get_tags
+    });
+
+  //for later versions
+  // if ($("#select_tag option").length <= 1) {
+  //   console.log($("#select_tag option").length)
+  //   $.post(URL, {'tags': {}}, get_tags)
+  // }
+});
+
+function get_tags(obj) {
+  var tags = Object.values(obj['tags']);
+  for (var tag of tags) {
+        $("select#select_tag").append(new Option(tag['tname'], tag['tname']));
+  }
+}
+
+$("input[value='tag']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#searchlabel").hide()
+        $(this).closest("form")
+               .find("label#selTag").show()  
+})
+$("input[value='work']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#selTag").hide()
+        $(this).closest("form")
+               .find("label#searchlabel").show()         
+})
+$("input[value='author']").on("click", function (event) {
+        $(this).closest("form")
+               .find("label#selTag").hide()
+        $(this).closest("form")
+               .find("label#searchlabel").show()         
+})
+</script>
+</body>
+</html>
+
+
+
+{% extends "base.html" %}
+
+
+{% block content %}
+
+<div id="results">
+        <h1>Bookmarks:</h1>
+        <table id="res-list" class="table">
+            <thead>
+            <tr>
+                <th>Title</th>
+                <th>Summary</th>
+                <th>Author</th>
+            </tr>
+        </thead>
+        {% if res %}
+
+        {% for result in res %}
+            <tr work-sid="{{result['sid']}}">
+                <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
+                <td class="title">{{result['summary']}}</td>
+                <td class="author"><a href="{{url_for('profile', username=result['username'])}}">{{result['username']}}</a></td>
+            </tr>          
+        {% endfor %}
+
+        {% else %}
+        <tr><td>No results found</td></tr>
+        {% endif %}
+
+        </table>
+
+</div>
+{%endblock%}{%extends "base.html" %}
+
+{% block content %}
+<div id="history">
+    <h1>Your Reading History</h1>
+    <table id="history-list" class="table">
+        <thead>
+        <tr>
+            <th>Title</th>
+            <th>Author</th>
+            <th># of Chapters </th>
+            <th>Last Visited</th>
+        </tr>
+    </thead>
+    {%for work in history %}
+        {% if work and work['sid'] %}   
+        <tr work-sid="{{work['sid']}}">
+            <td class="title"><a href="{{url_for('read', sid=work.sid)}}">{{work['title']}}</a></td>
+            <td class="author"><a href="{{url_for('profile', username=work['username'])}}">{{work['username']}}</a></td>
+            <td class="chapter-cnt">{{work['count(sid)']}}</td>
+            <td class="visited">{{work['visited']}}</td>
+        </tr> 
+        {% else %}
+        <tr><td>No results found</td></tr>
+        {% endif %} 
+    {% endfor %}
+{% endblock %}{% extends "base.html" %}
+
+{% block content %}
+<h1>Welcome to Critiq</h1>
+
+<p>Please login or join, using one of the forms below.</p>
+
+    <div class="row">
+        <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
+            <form id="joinform" action="{{url_for('join')}}" method="post">
+                    <h2>Join</h2>
+                    <p><label>Username: <input class="form-control" type="text" name="username" required pattern="^\w+$"></label></p>
+                    <p><label>Password: <input class="form-control" type="password" name="password1" required></label></p>
+                    <p><label>Password again: <input class="form-control" type="password" name="password2" required></label></p>
+                    <p><button class="btn btn-info" type="submit">Submit</button></p>
+                </form>
+        </div>
+        <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
+            <form id="loginform" action="{{url_for('login')}}" method="post">
+                    <h2>Login</h2>
+                    <p><label>Username: <input class="form-control" type="text" name="username" required pattern="^\w+$"></label></p>
+                    <p><label>Password: <input class="form-control" type="password" name="password" required></label></p>
+                    <p><button class="btn btn-info" type="submit">Submit</button></p>
+                </form>
+        </div>
+    </div>
+{% endblock %}
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>My Stories</h1> 
+<br>
+{% if stories %}
+
+    {% for story in stories %}
+    <div class="managestory">
+        <a href= "{{ url_for('update', sid=story['sid']) }}">
+            <h4>{{ story['title'] }} </h4>
+            <p>{{ story['summary'] }} </p>
+            {% if not story['wip'] %}
+            <a href="{{url_for('markFinished', sid=story['sid'])}}"><button class="btn btn-info">This work is finished.</button></a>
+            {% endif %}
+        </a>  
+    </div>
+    <br>  
+    {% endfor %}
+
+{% endif %}
+<a href= "{{ url_for('add') }}"><button class="btn btn-info">Add a story!</button></a>
+<br> <br>
+{% endblock %}{% extends "base.html" %}
+
+{% block content %}
+
+<h1>{{username}}'s Profile</h1>
+
+{% if currentUsername == username %}
+<br>
+
+<button class="btn btn-info" type="button" data-toggle="collapse" data-target="#prefcollapse" aria-expanded="false" aria-controls="prefcollapse">
+    Recommendation Preferences
+</button>
+
+<div class="prefsBox collapse" id="prefcollapse">
+    <h5>My Preferences</h5> 
+    <form id="prefs" method="POST" action="{{url_for('profile', username=username)}}">
+        <div class="form-group">
+        <h6>Include: </h6>
+
+        {% for tag, checked in prefs %}
+            {% if checked %}     
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" checked id="tag{{tag['tid']}}">
+                </div>
+            {% else %}
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="pref[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}">
+                </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+        
+    <input type="submit" name="submit-btn" value="Update Preferences" class="btn btn-secondary">
+    </form>
+<br>
+    <form id="filts" method="POST" action="{{url_for('profile', username=username)}}">
+        <div class="form-group">
+        <h6>Exclude: </h6>
+
+        {% for tag, checked in warnings %}
+            {% if checked %}
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="warning[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}" checked>
+                </div>
+            {% else %}
+                <div class="form-check form-check-inline">
+                    <label for="tag{{tag['tid']}}">{{tag['tname']}}</label>
+                    <input type="checkbox" name="warning[]" value="{{tag['tid']}}" id="tag{{tag['tid']}}">
+                </div>   
+            {% endif %}     
+        {% endfor %}
+    </div>
+    <input type="submit" name="submit-btn" value="Exclude Content" class="btn btn-secondary">
+    </form>
+
+</div>
+
+
+<br><br>
+
+
+<h5>Stories you've posted:</h5>
+{% else %}
+<h5>Stories by this user:</h5>
+{% endif %}
+
+{% for story in stories %}
+<div class=story>
+    <h5><a href="{{url_for('read', sid=story.sid)}}">{{story.title}}</a></h5>
+    <p>{{story.summary}}</p>
+</div>
+<br>
+{% endfor %}
+
+
+{% endblock %}{% extends 'base.html' %}
+
+{% block content %}
+
+<h1>{{page_title}}</h1>
+<h4>Chapter {{cnum}}</h4>
+<h5>By <a href="{{url_for('profile', username=author)}}">{{author}}</a></h5>
+
+<form method="POST" action="{{url_for('addBookmark')}}">
+    <input value={{sid}} name="sid" type="hidden">
+    {% if isBookmark %}
+    <input type="submit" name="changemark" class="btn btn-info" value="Bookmarked">
+    {% else %}
+    <input type="submit" name="changemark" class="btn btn-secondary" value="Add Bookmark">
+    {% endif %}
+</form>
+
+<br>
+
+<form method="POST" action="{{url_for('chapIndex')}}" class="form-inline">
+    <input value={{sid}} name="sid" type=hidden>
+    <div class="inline"><label for="cid">Chapter Index</label></div>
+    <div class="inline"><select class="form-control" id="cid" name="cid">
+        {% for i in allch %}
+            <option value="{{i['cnum']}}">Chapter {{i['cnum']}}</option>
+        {% endfor %}
+    </select></div>
+    <div class="inline"><input type=submit value="Submit" class="btn btn-secondary"></div>
+</form>
+
+<br><br>
+{{ story|safe }}
+
+<br>
+<div id=nextprev>
+    {% if cnum > 1 %}
+    <a href="{{url_for('read', sid=sid, cnum=cnum-1)}}"><button class="btn btn-secondary">&#8592; Previous Chapter</button></a>
+    {% endif %}
+    
+    {% if cnum < maxCh %}
+    <a href="{{url_for('read', sid=sid, cnum=cnum+1)}}"><button class="btn btn-secondary">Next Chapter &#8594;</button></a>
+    {% endif %}
+</div>
+<!-- Need to include a Next Chapter Button -->
+
+<br><br>
+<div id=existingComments>
+    {% if allComments %}
+        <h5>Comments others have left for you:</h5>
+        <br>
+        {% for comment in allComments %}
+            <div class=comment>
+                <p><a href="{{url_for('profile', username=comment.commenter)}}">{{ comment.commenter}}</a></p>
+                <p>{{ comment.reviewText }}</p>
+                <form class="helpfulForm" method="POST" id=rid{{comment.rid}}> <!-- action="{{url_for('markHelpful')}}"> -->
+                    <input class="helpfulRid" value={{comment.rid}} name="rid" type=hidden>
+                    {% if comment.ishelpful == False %}
+                    <label id="helpful" class="helpful"><div class=labelInput><div id="helpfulbtn" class="like">&#128077;</div></div>
+                        <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
+                    <label id="nothelpful" class="helpful"><div class=labelInput><div id="nothelpfulbtn" class="likeselected">&#128078;</div></div> 
+                        <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                    {% elif comment.ishelpful == True %}
+                    <label id="helpful" class="helpful"><div class=labelInput><div id="helpfulbtn" class="likeselected">&#128077;</div></div>
+                        <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
+                    <label id="nothelpful" class="helpful"><div class=labelInput><div id="nothelpfulbtn" class="like">&#128078;</div></div> 
+                        <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                    {% else %}
+                    <label id="helpful" class="helpful"><div class=labelInput><div id="helpfulbtn" class="like">&#128077;</div></div>
+                        <input class="helpfulInput" type="radio" value=1 name="helpful"> </label>
+                    <label id="nothelpful" class="helpful"><div class=labelInput><div id="nothelpfulbtn" class="like">&#128078;</div></div> 
+                        <input class="helpfulInput" type="radio" value=0 name="helpful"> </label>
+                    {% endif %}
+                </form>
+            </div>
+            <br>
+        {% endfor %}
+    {% else %}
+        {% if comments %}
+        <h5>Comments you've left on this chapter:</h5>
+        <br>
+        {% else %}
+        <h5>You haven't left any comments on this chapter yet.</h5>
+        {% endif %}
+        {% for comment in comments %}
+            <div class=comment>
+                <p>{{ comment.reviewText }}</p>
+            </div>
+            <br>
+        {% endfor %}
+    {% endif %}
+</div>
+
+
+<!-- want to reflect previous ratings on page load, probably a beta feature -->
+{% if chapter.wip %}
+    <form id="rateForm" method = "POST" action="{{url_for('rateAjax')}}">  
+            <input class="rateSid" value={{sid}} name="sid" type=hidden>
+            <input class="rateUid" value={{uid}} name="sid" type=hidden>
+
+        {% if not old_rating %}
+            <label id="rate1" class="rating"><div class=labelInput> &#9734;</div>
+                <input class="ratingInput" type="radio" value=1 name="rating"> </label>
+            <label id="rate2" class="rating"><div class=labelInput> &#9734;</div> 
+                <input class="ratingInput" type="radio" value=2 name="rating"> </label>
+            <label id="rate3" class="rating"><div class=labelInput> &#9734;</div>
+                <input class="ratingInput" type="radio" value=3 name="rating"> </label>
+            <label id="rate4" class="rating"><div class=labelInput> &#9734;</div>
+                <input class="ratingInput" type="radio" value=4 name="rating">  </label>
+            <label id="rate5" class="rating"><div class=labelInput> &#9734;</div>
+                <input class="ratingInput" type="radio" value=5 name="rating"> </label>
+            <!-- <input class="rate-button" type="submit" value="rate this"></input> -->
+        {% else %}
+            {% for i in range(1,old_rating+1) %}
+            <label id="rate{{i}}" class="rating"><div class=labelInput> &#9733;</div>
+                <input class="ratingInput" type="radio" value={{i}} name="rating"> </label>
+            {% endfor %}
+            {% for i in range(old_rating+1, 6) %}
+            <label id="rate{{i}}" class="rating"><div class=labelInput> &#9734;</div>
+                <input class="ratingInput" type="radio" value={{i}} name="rating"> </label>
+
+            {% endfor %}
+
+            <p id="avgCol1">Average rating: {{avgRating}}/5</p>
+        {% endif %}
+
+        <p id="avgCol"></p>
+        </form>
+    
+{% endif %}
+
+    <form id="commentForm" action="{{url_for('addComment')}}" method="POST">
+        <label>Add a comment on this chapter
+            <textarea name="commentText" rows="8" class="form-control"></textarea></label>
+            <br>
+            <input value={{chapter.cid}} id="chapcid" name="chapcid" type=hidden>
+            <input id="commentSubmit" type="submit" class="btn btn-info" value="Comment">
+    </form>
+
+    <p id="commentConfirmation">Comment submitted!</p>
+
+
+<script>
+    $("#commentConfirmation").hide()
+    $("#avgCol").hide()
+    
+    $("input[type=radio].ratingInput").hide()
+    $("input:radio.helpfulInput").hide()
+    var progressive_on = true;
+    var RATEURL = "{{url_for('rateAjax')}}"   
+    var HELPFULURL = "{{url_for('markHelpful')}}" 
+
+    // $("input:radio.ratingInput").click(function() { 
+        $("#rateForm").on("click", "input:radio.ratingInput", function(event) {
+        console.log('adding rating with Ajax')
+        $("#avgCol1").hide()
+        //turn on ajax
+        if (progressive_on) {
+            rate = $(this).val();
+            console.log(rate);
+            for (i = 1; i <= rate; i++) {
+                // console.log(i)
+                $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9733;');
+            };
+            for (i = 5; i > rate; i--) {
+                // console.log(i)
+                $("#rateForm").find("#rate" + i).find(".labelInput").html(' &#9734;');
+            };
+            $("input:radio.ratingInput").hide()
+            //update avg rating
+            var sid = $(this).closest("form").find(".rateSid").val()
+            var uid = $(this).closest("form").find(".rateUid").val()
+            $.post(RATEURL, {'rating': rate,
+                        'sid': sid,
+                        'uid': uid}, showAvgRating)
+            
+        }
+    });
+
+    $(".helpfulForm").on("click", "input:radio.helpfulInput", function(event) {
+        console.log('mark helpful with Ajax')
+        //turn on ajax
+        if (progressive_on) {
+            helpful = $(this).val();
+            console.log(helpful);
+            // $("input:radio.helpfulInput").hide()
+
+            var rid = $(this).closest("form").find(".helpfulRid").val()
+            console.log(rid)
+            var styles = {"background-color": "#888888",
+                        "border-color": "#888888"}
+            $(this).closest("form").find("#helpfulbtn").css(styles)
+            $(this).closest("form").find("#nothelpfulbtn").css(styles)
+
+            $.post(HELPFULURL, {'helpful': helpful, 'rid': rid}, showHelpful)
+            
+        }
+    });
+
+    function showAvgRating(obj) {
+        console.log(obj)
+        $('#avgCol').text('Average rating: ' + obj.avgRating + '/5')
+        $('#avgCol').show()
+    }
+
+    function showHelpful(obj) {
+        console.log(obj)
+        var styles = {"background-color": "green",
+                        "border-color": "green"}
+        if (obj.helpful == 0){
+            $("#rid" + obj.rid).find("#nothelpfulbtn").css(styles)
+        } else if (obj.helpful == 1) {
+            $("#rid" + obj.rid).find("#helpfulbtn").css(styles)
+        }
+    }
+
+</script>
+
+<noscript>
+    <p>Your browser doesn't support JavaScript.</p>
+</noscript>
+
+{% endblock %}{% extends "base.html" %}
+
+{% block head_stuff %}
+    {% if resKind=="Works" %}
+    <script src="//code.jquery.com/jquery-1.11.1.min.js"></script>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <!-- <link rel="stylesheet" href="{{url_for('static', filename = 'bootstrap3_style_bits.css')}}"> -->
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{url_for('static', filename = 'style.css')}}">
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<br>
+<div class="container">
+{% if warnings and (resKind=="Works") %}
+	<div class="row">
+        <div id="filter-panel" class="collapse filter-panel">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form role="form" method="POST" action="{{request.url}}">
+                        <div class="form-group">
+                            
+                            <div class="filter-row">
+                                <label class="filter-row" style="margin-right:10px;" for="pref-exclude">
+                                    Sorting
+                                    <div class="dropdown filter-box">
+                                        <label>Sort By:<select id="sortby" name="sortby" class="form-control">
+                                            <option value="">Sort By:</option>
+                                            <option value="avgRating">Rating</option>
+                                            <option value='updated'>Date Updated</option>
+                                        </select>
+                                    </div>
+                                </label>                                  
+
+                            </div>
+                            <div class="filter-row">
+                                <label class="filter-col">
+                                    Filter By:
+                                    <div class="dropdown filter-box">
+                                    <select id="finished" name="finished" class="form-control">
+                                        <option value="">Completion</option>
+                                        <option value="not-wip">Finished</option>
+                                        <option value="wip">Work In Progress</option>
+                                    </select>
+                                    </div>
+                                    <div class="dropdown filter-box">
+                                        <select id="audience" name="audience" class="form-control">
+                                            <option value="">Audience</option>
+                                            <option value="General">General</option>
+                                            <option value="Young Adult">Young Adult</option>
+                                            <option value="18+">18+</option>                                           
+                                        </select>
+                                    </div>
+                                </label>
+
+                            </div>
+                            <div class="filter-row">
+                                <label class="filter-col">
+                                    Dont Show:
+                                    <div class="dropdown filter-box">
+                                        <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                            Don't Show Me Works Involving:
+                                            <span class="sr-only">Toggle Dropdown</span>
+                                        </button>
+                                        <ul class="dropdown-menu" >
+                                        {% for warning in warnings %}
+                                        <li>
+                                        <label class="checkbox" style="margin-right: 25px;">
+                                            <input type="checkbox" style="margin-left: 10px; margin-right: 7px;" name="warnings[]" value="{{warning['tid']}}">{{warning['tname']}}</input>
+                                        </label>
+                                        </li>
+                                        {% endfor %} 
+                                        </ul>
+                                    </div>
+                                </label>
+                            </div>
+                            <button type="submit" class="btn btn-default filter-box" style="float: right;">
+                                <span class="glyphicon glyphicon-record"></span> Apply
+                            </button>
+                        </div>        
+                    </form>
+                </div>
+            </div>
+        </div>
+        </div>    
+        <button type="button" class="btn btn-primary" style="background-color:forestgreen; float:right;" data-toggle="collapse" data-target="#filter-panel">
+            <span class="glyphicon glyphicon-cog"></span> Advanced Search
+        </button>
+{% endif %}
+
+
+<div id="results">
+        {% if resKind=="Recs" %}
+        <h1>Recommendations:</h1>
+        {% else %}
+        <h1 style="padding-top=1%">Search results for {{resKind}}: '{{term}}' </h1> 
+        {% endif %}
+        <br>
+        <table id="res-list" class="table">
+            <thead>
+            <tr>
+	      {% if (resKind=="Works") or (resKind=="Recs") %}
+                <th>Title</th>
+                <th>Author</th>
+                <th># of Chapters</th>
+                <th>Finished? </th>
+	      {% else %}
+		<th>Author Username</th>
+	      {% endif %}
+            </tr>
+        </thead>
+        {% if res %}
+        {%for result in res %}
+        {% if (resKind=="Works") or (resKind=="Recs") %}
+            {% if result and result['sid'] %}   
+            <tr work-sid="{{result['sid']}}">
+                <td class="title"><a href="{{url_for('read', sid=result.sid)}}">{{result['title']}}</a></td>
+                <td class="author"><a href="{{url_for('profile', username=result['username'])}}">{{result['username']}}</a></td>
+                <td class="chapter-cnt">{{result['count(sid)']}}</td>
+                <td class="updated">
+                    {% if result['wip'] == 0 %}
+                    Work in Progress
+                    {% elif result['wip'] == 1 %}
+                    Finished
+                    {% endif %}
+                </td>
+            </tr> 
+            {% else %}
+            <tr><td>No results found</td></tr>
+            {% endif %}
+	    {% else %}
+	        <tr uid="{{result['uid']}}">
+	            <td class="uname"><a href="{{ url_for('profile', username=result['username']) }}">{{result['username']}}</a></td>
+	        </tr>
+        {% endif %}
+        
+        {%endfor%}
+        {% else %}
+            <tr><td>No results found</td></tr>
+        {% endif %} 
+	    
+
+        </table>
+
+</div>
+</div>
+{%endblock%}
+{% extends 'base.html' %}
+
+{% block content %}
+<body>
+    <br>
+    <!-- <ul> -->
+        {% for i in allch %}
+            <a href="{{url_for('update', sid=i['sid'], cnum=i['cnum'])}}"><p>Edit chapter {{i['cnum']}}</p></a>
+            {% if loop.last %}
+            <a href="{{url_for('update', sid=i['sid'], cnum=(i['cnum']+1))}}"><button class="btn btn-info">Add Chapter {{i['cnum']+1}}</button></a>
+            {% endif %}
+        {% endfor %}
+    <!-- </ul> -->
+
+    <form action="" method="POST">
+        <label>
+            <h1>Write Your Story Here</h1>
+            <h4>Chapter {{cnum}} of {{title}}</h4>
+            <textarea id="tinytext" name="write"></textarea>
+        </label>
+        <br>
+        <input type="submit" class="btn btn-info" value="Submit" name="submit">
+    </form>
+
+<script>
+var story = `{{story|safe}}`
+console.log(story)
+</script>
+<script src="{{ url_for('static', filename='tinyeditor.js') }}" defer></script>
+
+</body>
+{% endblock %}
+tinymce.init({
+    selector:'#tinytext',
+    plugins: ['wordcount hr spellchecker lists'],
+    toolbar: ['undo redo | bold italic underline strikethrough | alignleft aligncenter alignright | bullist numlist | blockquote hr indent outdent | removeformat'],
+    menubar: false, //sorry scott that line above needs to be long
+    width: 700, //px
+    height: 600,
+    element_format: 'html',
+    init_instance_callback : function(editor) {
+        editor.setContent(story)
+        var freeTiny = document.querySelector('.tox .tox-notification--in');
+        freeTiny.style.display = 'none';
+    }
+});@font-face{font-family:'Glyphicons Halflings';src:url(../fonts/glyphicons-halflings-regular.eot);src:url(../fonts/glyphicons-halflings-regular.eot?#iefix) format('embedded-opentype'),url(../fonts/glyphicons-halflings-regular.woff) format('woff'),url(../fonts/glyphicons-halflings-regular.ttf) format('truetype'),url(../fonts/glyphicons-halflings-regular.svg#glyphicons_halflingsregular) format('svg')}.glyphicon{position:relative;top:1px;display:inline-block;font-family:'Glyphicons Halflings';font-style:normal;font-weight:400;line-height:1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.glyphicon-asterisk:before{content:"\2a"}.glyphicon-plus:before{content:"\2b"}.glyphicon-euro:before{content:"\20ac"}.glyphicon-minus:before{content:"\2212"}.glyphicon-cloud:before{content:"\2601"}.glyphicon-envelope:before{content:"\2709"}.glyphicon-pencil:before{content:"\270f"}.glyphicon-glass:before{content:"\e001"}.glyphicon-music:before{content:"\e002"}.glyphicon-search:before{content:"\e003"}.glyphicon-heart:before{content:"\e005"}.glyphicon-star:before{content:"\e006"}.glyphicon-star-empty:before{content:"\e007"}.glyphicon-user:before{content:"\e008"}.glyphicon-film:before{content:"\e009"}.glyphicon-th-large:before{content:"\e010"}.glyphicon-th:before{content:"\e011"}.glyphicon-th-list:before{content:"\e012"}.glyphicon-ok:before{content:"\e013"}.glyphicon-remove:before{content:"\e014"}.glyphicon-zoom-in:before{content:"\e015"}.glyphicon-zoom-out:before{content:"\e016"}.glyphicon-off:before{content:"\e017"}.glyphicon-signal:before{content:"\e018"}.glyphicon-cog:before{content:"\e019"}.glyphicon-trash:before{content:"\e020"}.glyphicon-home:before{content:"\e021"}.glyphicon-file:before{content:"\e022"}.glyphicon-time:before{content:"\e023"}.glyphicon-road:before{content:"\e024"}.glyphicon-download-alt:before{content:"\e025"}.glyphicon-download:before{content:"\e026"}.glyphicon-upload:before{content:"\e027"}.glyphicon-inbox:before{content:"\e028"}.glyphicon-play-circle:before{content:"\e029"}.glyphicon-repeat:before{content:"\e030"}.glyphicon-refresh:before{content:"\e031"}.glyphicon-list-alt:before{content:"\e032"}.glyphicon-lock:before{content:"\e033"}.glyphicon-flag:before{content:"\e034"}.glyphicon-headphones:before{content:"\e035"}.glyphicon-volume-off:before{content:"\e036"}.glyphicon-volume-down:before{content:"\e037"}.glyphicon-volume-up:before{content:"\e038"}.glyphicon-qrcode:before{content:"\e039"}.glyphicon-barcode:before{content:"\e040"}.glyphicon-tag:before{content:"\e041"}.glyphicon-tags:before{content:"\e042"}.glyphicon-book:before{content:"\e043"}.glyphicon-bookmark:before{content:"\e044"}.glyphicon-print:before{content:"\e045"}.glyphicon-camera:before{content:"\e046"}.glyphicon-font:before{content:"\e047"}.glyphicon-bold:before{content:"\e048"}.glyphicon-italic:before{content:"\e049"}.glyphicon-text-height:before{content:"\e050"}.glyphicon-text-width:before{content:"\e051"}.glyphicon-align-left:before{content:"\e052"}.glyphicon-align-center:before{content:"\e053"}.glyphicon-align-right:before{content:"\e054"}.glyphicon-align-justify:before{content:"\e055"}.glyphicon-list:before{content:"\e056"}.glyphicon-indent-left:before{content:"\e057"}.glyphicon-indent-right:before{content:"\e058"}.glyphicon-facetime-video:before{content:"\e059"}.glyphicon-picture:before{content:"\e060"}.glyphicon-map-marker:before{content:"\e062"}.glyphicon-adjust:before{content:"\e063"}.glyphicon-tint:before{content:"\e064"}.glyphicon-edit:before{content:"\e065"}.glyphicon-share:before{content:"\e066"}.glyphicon-check:before{content:"\e067"}.glyphicon-move:before{content:"\e068"}.glyphicon-step-backward:before{content:"\e069"}.glyphicon-fast-backward:before{content:"\e070"}.glyphicon-backward:before{content:"\e071"}.glyphicon-play:before{content:"\e072"}.glyphicon-pause:before{content:"\e073"}.glyphicon-stop:before{content:"\e074"}.glyphicon-forward:before{content:"\e075"}.glyphicon-fast-forward:before{content:"\e076"}.glyphicon-step-forward:before{content:"\e077"}.glyphicon-eject:before{content:"\e078"}.glyphicon-chevron-left:before{content:"\e079"}.glyphicon-chevron-right:before{content:"\e080"}.glyphicon-plus-sign:before{content:"\e081"}.glyphicon-minus-sign:before{content:"\e082"}.glyphicon-remove-sign:before{content:"\e083"}.glyphicon-ok-sign:before{content:"\e084"}.glyphicon-question-sign:before{content:"\e085"}.glyphicon-info-sign:before{content:"\e086"}.glyphicon-screenshot:before{content:"\e087"}.glyphicon-remove-circle:before{content:"\e088"}.glyphicon-ok-circle:before{content:"\e089"}.glyphicon-ban-circle:before{content:"\e090"}.glyphicon-arrow-left:before{content:"\e091"}.glyphicon-arrow-right:before{content:"\e092"}.glyphicon-arrow-up:before{content:"\e093"}.glyphicon-arrow-down:before{content:"\e094"}.glyphicon-share-alt:before{content:"\e095"}.glyphicon-resize-full:before{content:"\e096"}.glyphicon-resize-small:before{content:"\e097"}.glyphicon-exclamation-sign:before{content:"\e101"}.glyphicon-gift:before{content:"\e102"}.glyphicon-leaf:before{content:"\e103"}.glyphicon-fire:before{content:"\e104"}.glyphicon-eye-open:before{content:"\e105"}.glyphicon-eye-close:before{content:"\e106"}.glyphicon-warning-sign:before{content:"\e107"}.glyphicon-plane:before{content:"\e108"}.glyphicon-calendar:before{content:"\e109"}.glyphicon-random:before{content:"\e110"}.glyphicon-comment:before{content:"\e111"}.glyphicon-magnet:before{content:"\e112"}.glyphicon-chevron-up:before{content:"\e113"}.glyphicon-chevron-down:before{content:"\e114"}.glyphicon-retweet:before{content:"\e115"}.glyphicon-shopping-cart:before{content:"\e116"}.glyphicon-folder-close:before{content:"\e117"}.glyphicon-folder-open:before{content:"\e118"}.glyphicon-resize-vertical:before{content:"\e119"}.glyphicon-resize-horizontal:before{content:"\e120"}.glyphicon-hdd:before{content:"\e121"}.glyphicon-bullhorn:before{content:"\e122"}.glyphicon-bell:before{content:"\e123"}.glyphicon-certificate:before{content:"\e124"}.glyphicon-thumbs-up:before{content:"\e125"}.glyphicon-thumbs-down:before{content:"\e126"}.glyphicon-hand-right:before{content:"\e127"}.glyphicon-hand-left:before{content:"\e128"}.glyphicon-hand-up:before{content:"\e129"}.glyphicon-hand-down:before{content:"\e130"}.glyphicon-circle-arrow-right:before{content:"\e131"}.glyphicon-circle-arrow-left:before{content:"\e132"}.glyphicon-circle-arrow-up:before{content:"\e133"}.glyphicon-circle-arrow-down:before{content:"\e134"}.glyphicon-globe:before{content:"\e135"}.glyphicon-wrench:before{content:"\e136"}.glyphicon-tasks:before{content:"\e137"}.glyphicon-filter:before{content:"\e138"}.glyphicon-briefcase:before{content:"\e139"}.glyphicon-fullscreen:before{content:"\e140"}.glyphicon-dashboard:before{content:"\e141"}.glyphicon-paperclip:before{content:"\e142"}.glyphicon-heart-empty:before{content:"\e143"}.glyphicon-link:before{content:"\e144"}.glyphicon-phone:before{content:"\e145"}.glyphicon-pushpin:before{content:"\e146"}.glyphicon-usd:before{content:"\e148"}.glyphicon-gbp:before{content:"\e149"}.glyphicon-sort:before{content:"\e150"}.glyphicon-sort-by-alphabet:before{content:"\e151"}.glyphicon-sort-by-alphabet-alt:before{content:"\e152"}.glyphicon-sort-by-order:before{content:"\e153"}.glyphicon-sort-by-order-alt:before{content:"\e154"}.glyphicon-sort-by-attributes:before{content:"\e155"}.glyphicon-sort-by-attributes-alt:before{content:"\e156"}.glyphicon-unchecked:before{content:"\e157"}.glyphicon-expand:before{content:"\e158"}.glyphicon-collapse-down:before{content:"\e159"}.glyphicon-collapse-up:before{content:"\e160"}.glyphicon-log-in:before{content:"\e161"}.glyphicon-flash:before{content:"\e162"}.glyphicon-log-out:before{content:"\e163"}.glyphicon-new-window:before{content:"\e164"}.glyphicon-record:before{content:"\e165"}.glyphicon-save:before{content:"\e166"}.glyphicon-open:before{content:"\e167"}.glyphicon-saved:before{content:"\e168"}.glyphicon-import:before{content:"\e169"}.glyphicon-export:before{content:"\e170"}.glyphicon-send:before{content:"\e171"}.glyphicon-floppy-disk:before{content:"\e172"}.glyphicon-floppy-saved:before{content:"\e173"}.glyphicon-floppy-remove:before{content:"\e174"}.glyphicon-floppy-save:before{content:"\e175"}.glyphicon-floppy-open:before{content:"\e176"}.glyphicon-credit-card:before{content:"\e177"}.glyphicon-transfer:before{content:"\e178"}.glyphicon-cutlery:before{content:"\e179"}.glyphicon-header:before{content:"\e180"}.glyphicon-compressed:before{content:"\e181"}.glyphicon-earphone:before{content:"\e182"}.glyphicon-phone-alt:before{content:"\e183"}.glyphicon-tower:before{content:"\e184"}.glyphicon-stats:before{content:"\e185"}.glyphicon-sd-video:before{content:"\e186"}.glyphicon-hd-video:before{content:"\e187"}.glyphicon-subtitles:before{content:"\e188"}.glyphicon-sound-stereo:before{content:"\e189"}.glyphicon-sound-dolby:before{content:"\e190"}.glyphicon-sound-5-1:before{content:"\e191"}.glyphicon-sound-6-1:before{content:"\e192"}.glyphicon-sound-7-1:before{content:"\e193"}.glyphicon-copyright-mark:before{content:"\e194"}.glyphicon-registration-mark:before{content:"\e195"}.glyphicon-cloud-download:before{content:"\e197"}.glyphicon-cloud-upload:before{content:"\e198"}.glyphicon-tree-conifer:before{content:"\e199"}.glyphicon-tree-deciduous:before{content:"\e200"}
+.dropdown{position:relative}
+.panel{margin-bottom:20px;background-color:#fff;border:1px solid transparent;border-radius:4px;-webkit-box-shadow:0 1px 1px rgba(0,0,0,.05);box-shadow:0 1px 1px rgba(0,0,0,.05)}.panel-body{padding:15px}.panel>.list-group{margin-bottom:0}.panel>.list-group .list-group-item{border-width:1px 0;border-radius:0}.panel>.list-group .list-group-item:first-child{border-top:0}.panel>.list-group .list-group-item:last-child{border-bottom:0}.panel>.list-group:first-child .list-group-item:first-child{border-top-right-radius:3px;border-top-left-radius:3px}.panel>.list-group:last-child .list-group-item:last-child{border-bottom-right-radius:3px;border-bottom-left-radius:3px}.panel-heading+.list-group .list-group-item:first-child{border-top-width:0}.panel>.table,.panel>.table-responsive>.table{margin-bottom:0}.panel>.table:first-child>thead:first-child>tr:first-child td:first-child,.panel>.table-responsive:first-child>.table:first-child>thead:first-child>tr:first-child td:first-child,.panel>.table:first-child>tbody:first-child>tr:first-child td:first-child,.panel>.table-responsive:first-child>.table:first-child>tbody:first-child>tr:first-child td:first-child,.panel>.table:first-child>thead:first-child>tr:first-child th:first-child,.panel>.table-responsive:first-child>.table:first-child>thead:first-child>tr:first-child th:first-child,.panel>.table:first-child>tbody:first-child>tr:first-child th:first-child,.panel>.table-responsive:first-child>.table:first-child>tbody:first-child>tr:first-child th:first-child{border-top-left-radius:3px}.panel>.table:first-child>thead:first-child>tr:first-child td:last-child,.panel>.table-responsive:first-child>.table:first-child>thead:first-child>tr:first-child td:last-child,.panel>.table:first-child>tbody:first-child>tr:first-child td:last-child,.panel>.table-responsive:first-child>.table:first-child>tbody:first-child>tr:first-child td:last-child,.panel>.table:first-child>thead:first-child>tr:first-child th:last-child,.panel>.table-responsive:first-child>.table:first-child>thead:first-child>tr:first-child th:last-child,.panel>.table:first-child>tbody:first-child>tr:first-child th:last-child,.panel>.table-responsive:first-child>.table:first-child>tbody:first-child>tr:first-child th:last-child{border-top-right-radius:3px}.panel>.table:last-child>tbody:last-child>tr:last-child td:first-child,.panel>.table-responsive:last-child>.table:last-child>tbody:last-child>tr:last-child td:first-child,.panel>.table:last-child>tfoot:last-child>tr:last-child td:first-child,.panel>.table-responsive:last-child>.table:last-child>tfoot:last-child>tr:last-child td:first-child,.panel>.table:last-child>tbody:last-child>tr:last-child th:first-child,.panel>.table-responsive:last-child>.table:last-child>tbody:last-child>tr:last-child th:first-child,.panel>.table:last-child>tfoot:last-child>tr:last-child th:first-child,.panel>.table-responsive:last-child>.table:last-child>tfoot:last-child>tr:last-child th:first-child{border-bottom-left-radius:3px}.panel>.table:last-child>tbody:last-child>tr:last-child td:last-child,.panel>.table-responsive:last-child>.table:last-child>tbody:last-child>tr:last-child td:last-child,.panel>.table:last-child>tfoot:last-child>tr:last-child td:last-child,.panel>.table-responsive:last-child>.table:last-child>tfoot:last-child>tr:last-child td:last-child,.panel>.table:last-child>tbody:last-child>tr:last-child th:last-child,.panel>.table-responsive:last-child>.table:last-child>tbody:last-child>tr:last-child th:last-child,.panel>.table:last-child>tfoot:last-child>tr:last-child th:last-child,.panel>.table-responsive:last-child>.table:last-child>tfoot:last-child>tr:last-child th:last-child{border-bottom-right-radius:3px}.panel>.panel-body+.table,.panel>.panel-body+.table-responsive{border-top:1px solid #ddd}.panel>.table>tbody:first-child>tr:first-child th,.panel>.table>tbody:first-child>tr:first-child td{border-top:0}.panel>.table-bordered,.panel>.table-responsive>.table-bordered{border:0}.panel>.table-bordered>thead>tr>th:first-child,.panel>.table-responsive>.table-bordered>thead>tr>th:first-child,.panel>.table-bordered>tbody>tr>th:first-child,.panel>.table-responsive>.table-bordered>tbody>tr>th:first-child,.panel>.table-bordered>tfoot>tr>th:first-child,.panel>.table-responsive>.table-bordered>tfoot>tr>th:first-child,.panel>.table-bordered>thead>tr>td:first-child,.panel>.table-responsive>.table-bordered>thead>tr>td:first-child,.panel>.table-bordered>tbody>tr>td:first-child,.panel>.table-responsive>.table-bordered>tbody>tr>td:first-child,.panel>.table-bordered>tfoot>tr>td:first-child,.panel>.table-responsive>.table-bordered>tfoot>tr>td:first-child{border-left:0}.panel>.table-bordered>thead>tr>th:last-child,.panel>.table-responsive>.table-bordered>thead>tr>th:last-child,.panel>.table-bordered>tbody>tr>th:last-child,.panel>.table-responsive>.table-bordered>tbody>tr>th:last-child,.panel>.table-bordered>tfoot>tr>th:last-child,.panel>.table-responsive>.table-bordered>tfoot>tr>th:last-child,.panel>.table-bordered>thead>tr>td:last-child,.panel>.table-responsive>.table-bordered>thead>tr>td:last-child,.panel>.table-bordered>tbody>tr>td:last-child,.panel>.table-responsive>.table-bordered>tbody>tr>td:last-child,.panel>.table-bordered>tfoot>tr>td:last-child,.panel>.table-responsive>.table-bordered>tfoot>tr>td:last-child{border-right:0}.panel>.table-bordered>thead>tr:first-child>th,.panel>.table-responsive>.table-bordered>thead>tr:first-child>th,.panel>.table-bordered>tbody>tr:first-child>th,.panel>.table-responsive>.table-bordered>tbody>tr:first-child>th,.panel>.table-bordered>tfoot>tr:first-child>th,.panel>.table-responsive>.table-bordered>tfoot>tr:first-child>th,.panel>.table-bordered>thead>tr:first-child>td,.panel>.table-responsive>.table-bordered>thead>tr:first-child>td,.panel>.table-bordered>tbody>tr:first-child>td,.panel>.table-responsive>.table-bordered>tbody>tr:first-child>td,.panel>.table-bordered>tfoot>tr:first-child>td,.panel>.table-responsive>.table-bordered>tfoot>tr:first-child>td{border-top:0}.panel>.table-bordered>thead>tr:last-child>th,.panel>.table-responsive>.table-bordered>thead>tr:last-child>th,.panel>.table-bordered>tbody>tr:last-child>th,.panel>.table-responsive>.table-bordered>tbody>tr:last-child>th,.panel>.table-bordered>tfoot>tr:last-child>th,.panel>.table-responsive>.table-bordered>tfoot>tr:last-child>th,.panel>.table-bordered>thead>tr:last-child>td,.panel>.table-responsive>.table-bordered>thead>tr:last-child>td,.panel>.table-bordered>tbody>tr:last-child>td,.panel>.table-responsive>.table-bordered>tbody>tr:last-child>td,.panel>.table-bordered>tfoot>tr:last-child>td,.panel>.table-responsive>.table-bordered>tfoot>tr:last-child>td{border-bottom:0}.panel>.table-responsive{border:0;margin-bottom:0}.panel-heading{padding:10px 15px;border-bottom:1px solid transparent;border-top-right-radius:3px;border-top-left-radius:3px}.panel-heading>.dropdown .dropdown-toggle{color:inherit}.panel-title{margin-top:0;margin-bottom:0;font-size:16px;color:inherit}.panel-title>a{color:inherit}.panel-footer{padding:10px 15px;background-color:#f5f5f5;border-top:1px solid #ddd;border-bottom-right-radius:3px;border-bottom-left-radius:3px}.panel-group{margin-bottom:20px}.panel-group .panel{margin-bottom:0;border-radius:4px;overflow:hidden}.panel-group .panel+.panel{margin-top:5px}.panel-group .panel-heading{border-bottom:0}.panel-group .panel-heading+.panel-collapse .panel-body{border-top:1px solid #ddd}.panel-group .panel-footer{border-top:0}.panel-group .panel-footer+.panel-collapse .panel-body{border-bottom:1px solid #ddd}.panel-default{border-color:#ddd}.panel-default>.panel-heading{color:#333;background-color:#f5f5f5;border-color:#ddd}.panel-default>.panel-heading+.panel-collapse .panel-body{border-top-color:#ddd}.panel-default>.panel-footer+.panel-collapse .panel-body{border-bottom-color:#ddd}.panel-primary{border-color:#428bca}.panel-primary>.panel-heading{color:#fff;background-color:#428bca;border-color:#428bca}.panel-primary>.panel-heading+.panel-collapse .panel-body{border-top-color:#428bca}.panel-primary>.panel-footer+.panel-collapse .panel-body{border-bottom-color:#428bca}.panel-success{border-color:#d6e9c6}.panel-success>.panel-heading{color:#3c763d;background-color:#dff0d8;border-color:#d6e9c6}.panel-success>.panel-heading+.panel-collapse .panel-body{border-top-color:#d6e9c6}.panel-success>.panel-footer+.panel-collapse .panel-body{border-bottom-color:#d6e9c6}.panel-info{border-color:#bce8f1}.panel-info>.panel-heading{color:#31708f;background-color:#d9edf7;border-color:#bce8f1}.panel-info>.panel-heading+.panel-collapse .panel-body{border-top-color:#bce8f1}.panel-info>.panel-footer+.panel-collapse .panel-body{border-bottom-color:#bce8f1}.panel-warning{border-color:#faebcc}.panel-warning>.panel-heading{color:#8a6d3b;background-color:#fcf8e3;border-color:#faebcc}.panel-warning>.panel-heading+.panel-collapse .panel-body{border-top-color:#faebcc}.panel-warning>.panel-footer+.panel-collapse .panel-body{border-bottom-color:#faebcc}.panel-danger{border-color:#ebccd1}.panel-danger>.panel-heading{color:#a94442;background-color:#f2dede;border-color:#ebccd1}.panel-danger>.panel-heading+.panel-collapse .panel-body{border-top-color:#ebccd1}.panel-danger>.panel-footer+.panel-collapse .panel-body{border-bottom-color:#ebccd1}
+body{
+    /* font-family: Raleway; */
+    size: 1.5em;
+}
+
+#messages {
+    color: rgb(0, 95, 0);
+    font-style: italic;
+}
+
+h1 {
+    font-size: 200%;
+    padding-top:5%;
+    color: rgb(0, 95, 0);
+}
+
+.unselectable {
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+#selTag {
+    display: none;
+}
+
+#formtag {
+    display: none;
+}
+
+.search_term {
+    visibility: visible;
+}
+
+.comment {
+    background-color: #EEEEEE;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.story {
+    border-style: solid;
+    border-color: #EEEEEE;
+    border-width: 2px;
+    padding: 10px;
+}
+
+a {
+    color: rgb(14, 87, 14);
+}
+
+a:hover {
+    color: rgb(0, 65, 0);
+}
+.prefsBox {
+    background-color: #EEEEEE;
+    padding: 10px;
+}
+
+.managestory {
+    background-color: #EEEEEE;
+    padding: 10px;
+}
+
+.btn-secondary {
+    background-color: #555555;
+    border-color: #555555;
+}
+
+.btn-secondary:hover {
+    background-color: #333333
+}
+
+.nav-item input {
+    padding-left: 5px;
+}
+
+.nonactive {
+    padding-top: 10px;
+}
+
+.btn-info {
+    background-color: rgb(0, 95, 0);
+    border-color: rgb(0, 95, 0);
+}
+
+.btn-info:hover {
+    background-color: rgb(0, 65, 0);
+}
+
+.inline {
+    padding-right: 5px;
+}
+
+#nextprev {
+    margin: auto;
+}
+
+.nonlogo {
+    padding-top: 10px;
+}
+.container {
+    max-width: 95%; 
+    min-width: fit-content; 
+}
+
+.tagbox {
+    background-color: #EEEEEE;
+    padding: 10px;
+    border-radius: 5px;
+}
+.filter-col {
+    display: flex;
+}
+
+.filter-row {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.filter-box {
+    margin:10px;
+    display: inline-block;
+}
+
+#searchLabel {
+    padding-right: 5px;
+}
+
+.like {
+    background-color: #999999;
+    border-color: #999999;
+    padding: 3px;
+    border-radius:2px;
+}
+
+.likeselected {
+    background-color: rgb(0, 165, 0);
+    border-color: rgb(0, 165, 0);
+    padding: 3px;
+    border-radius:2px;
+}drop table if exists bookmarks;
+drop table if exists history;
+drop table if exists ratings;
+drop table if exists prefs;
+drop table if exists reviewCredits;
+drop table if exists reviews;
+drop table if exists taglink;
+drop table if exists tags;
+drop table if exists chapters;
+drop table if exists works;
+drop table if exists users;
+
+create table users (
+    uid int not null auto_increment primary key,
+    username varchar(30), 
+    passhash char(60),
+    unique(username),
+    index(username),
+    commentscore DECIMAL
+);
+
+create table works (
+    sid int not null auto_increment primary key,
+    uid int not null,
+    title VARCHAR(200),
+    updated date,
+    summary varchar(2000),
+    stars float,
+    wip boolean,
+    avgRating decimal(10),
+    index(uid),
+    foreign key (uid) references users(uid)
+        on UPDATE cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+create table chapters (
+    cid int not null auto_increment,
+    cnum int,
+    sid int not NULL,
+    filename varchar(100),
+
+    PRIMARY KEY (cid),
+    index(sid),
+    foreign key (sid) references works(sid)
+        on update cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+create table tags (
+    tid int not null auto_increment primary key,
+    ttype varchar(20) not null,
+    tname varchar(50) not null unique
+)
+
+ENGINE = InnoDB;
+
+create table taglink (
+    tid int not null,
+    sid int not null,
+
+    foreign key(sid) references works(sid)
+        on update cascade
+        on delete cascade,
+    foreign key(tid) references tags(tid)
+        on update cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+create table reviews (
+    rid int not null auto_increment primary key,
+    commenter int not null,
+    ishelpful int,
+    reviewText varchar(2000),
+    foreign key(commenter) references users(uid)
+)
+
+ENGINE = InnoDB;
+
+create table reviewCredits ( 
+    rid int not null,
+    cid int not null,
+
+    primary key(rid, cid),
+
+    foreign key(rid) references reviews(rid)
+        on update cascade
+        on delete cascade,
+    foreign key(cid) references chapters(cid)
+        on update cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+create table prefs (
+    uid int not null,
+    tid int not null,
+    isWarning boolean, 
+    primary key (uid, tid),
+
+    foreign key(uid) references users(uid)
+        on update cascade
+        on delete cascade,
+    foreign key (tid) references tags(tid)
+        on update cascade
+        on delete cascade
+)
+ENGINE = InnoDB;
+
+
+create table ratings (
+    uid int not null,
+    sid int not null,
+    rating int not null,
+    primary key (uid, sid),
+    
+    foreign key(uid) references users(uid)
+        on update cascade
+        on delete cascade,
+    foreign key (sid) references works(sid)
+        on update cascade
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+create table history (
+    uid int not null,
+    sid int not null,
+    cid int not null,
+    visited datetime,
+    primary key (uid, sid, cid),
+    foreign key(uid) references users(uid)
+        on update cascade
+        on delete cascade,
+    foreign key (sid) references works(sid)
+        on update cascade
+        on delete cascade,
+    foreign key (cid) references chapters(cid)
+        on update CASCADE
+        on delete cascade,
+)
+
+ENGINE = InnoDB;
+
+create table bookmarks (
+    uid int not null,
+    sid int not null, 
+    primary key (uid, sid),
+    foreign key(uid) references users(uid)
+        on update CASCADE
+        on delete cascade,
+    foreign key(sid) references works(sid)
+        on update CASCADE
+        on delete cascade
+)
+
+ENGINE = InnoDB;
+
+-- genre ('Romance','Fantasy','Horror','Sci-Fi','Historical','Mystery','Humor','Literary', 
+--             'Thriller','Suspense','Poetry'), 
+-- audience ('General','Young Adult','18+'),
+-- warnings ('Violence','Gore','Rape/Sexual Assault','Sexual Content','Racism','Homophobia',
+--             'Suicidal Content','Abuse', 'Animal Cruelty', 'Self-Harm', 'Eating Disorder',
+--             'Incest','Child Abuse/Pedophilia', 'Death/Dying','Pregnancy/Childbirth',
+--             'Miscarriages/Abortion','Mental Illness'),
+-- isFin, 
+
+insert into tags values (null, 'genre', 'Romance'), (null, 'genre', 'Fantasy'), 
+    (null, 'genre', 'Horror'), (null, 'genre', 'Sci-Fi'), (null, 'genre', 'Historical'),
+    (null, 'genre', 'Mystery'), (null, 'genre', 'Humor'), (null, 'genre', 'Literary'),
+    (null, 'genre', 'Thriller'), (null, 'genre', 'Suspense'), (null, 'genre', 'Poetry');
+
+insert into tags values (null, 'audience', 'General'), (null, 'audience', 'Young Adult'),
+    (null, 'audience', '18+');
+
+insert into tags values (null, 'warnings', 'Violence'), (null, 'warnings', 'Gore'), 
+    (null, 'warnings', 'Rape or Sexual Assault'), (null, 'warnings', 'Sexual Content'),  
+    (null, 'warnings', 'Racism'), (null, 'warnings', 'Homophobia'), 
+    (null, 'warnings', 'Suicidal Content'), (null, 'warnings', 'Abuse'), 
+    (null, 'warnings', 'Animal Cruelty'), (null, 'warnings', 'Self-Harm'),
+    (null, 'warnings', 'Eating Disorder'), (null, 'warnings', 'Incest'),
+    (null, 'warnings', 'Child Abuse or Pedophilia'), (null, 'warnings', 'Death or Dying'),
+    (null, 'warnings', 'Pregnancy or Childbirth'),(null, 'warnings', 'Miscarriages orAbortion'),
+    (null, 'warnings', 'Mental Illness');
+
+insert into tags values (null, 'isFin', 'Finished'), (null, 'isFin', 'Work in Progress');
+

@@ -144,3 +144,6 @@ a:hover {
     padding: 3px;
     border-radius:2px;
 }
+legend {
+    display: hidden;
+}

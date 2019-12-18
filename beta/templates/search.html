@@ -22,10 +22,10 @@
                         <div class="form-group">
                             
                             <div class="filter-row">
-                                <label class="filter-row" style="margin-right:10px;" for="pref-exclude">
+                                <label class="filter-row" id="sort" style="margin-right:10px;" for="pref-exclude">
                                     Sorting
                                     <div class="dropdown filter-box">
-                                        <select id="sortby" name="sortby" class="form-control">
+                                       <select id="sortby" name="sortby" class="form-control" aria-labelledby="sort">
                                             <option value="">Sort By:</option>
                                             <option value="avgRating">Rating</option>
                                             <option value='updated'>Date Updated</option>
@@ -35,17 +35,17 @@
 
                             </div>
                             <div class="filter-row">
-                                <label class="filter-col">
+                                <label class="filter-col" id="filter">
                                     Filter By:
                                     <div class="dropdown filter-box">
-                                    <select id="finished" name="finished" class="form-control">
+                                    <select id="finished" name="finished" class="form-control" aria-labelledby="filter">
                                         <option value="">Completion</option>
                                         <option value="not-wip">Finished</option>
                                         <option value="wip">Work In Progress</option>
                                     </select>
                                     </div>
                                     <div class="dropdown filter-box">
-                                        <select id="audience" name="audience" class="form-control">
+                                        <select id="audience" name="audience" class="form-control" aria-labelledby="filter">
                                             <option value="">Audience</option>
                                             <option value="General">General</option>
                                             <option value="Young Adult">Young Adult</option>
@@ -56,7 +56,7 @@
 
                             </div>
                             <div class="filter-row">
-                                <label class="filter-col">
+                                <label class="filter-col" id="exclude">
                                     Dont Show:
                                     <div class="dropdown filter-box">
                                         <button type="button" class="btn dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
