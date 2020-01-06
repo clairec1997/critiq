@@ -66,8 +66,8 @@
                                         <ul class="dropdown-menu" >
                                         {% for warning in warnings %}
                                         <li>
-                                        <label class="checkbox" style="margin-right: 25px;">
-                                            <input type="checkbox" style="margin-left: 10px; margin-right: 7px;" name="warnings[]" value="{{warning['tid']}}">{{warning['tname']}}</input>
+                                        <label id="warn" class="checkbox" style="margin-right: 25px;">
+                                            <input type="checkbox" style="margin-left: 10px; margin-right: 7px;" name="warnings[]" value="{{warning['tid']}}" aria-labelledby="warn">{{warning['tname']}}</input>
                                         </label>
                                         </li>
                                         {% endfor %} 
@@ -84,7 +84,7 @@
             </div>
         </div>
         </div>    
-        <button type="button" class="btn btn-primary" style="background-color:forestgreen; float:right;" data-toggle="collapse" data-target="#filter-panel">
+        <button type="button" class="btn btn-primary" style="background-color: rgb(14, 87, 14); float:right;" data-toggle="collapse" data-target="#filter-panel">
             <span class="glyphicon glyphicon-cog"></span> Advanced Search
         </button>
 {% endif %}

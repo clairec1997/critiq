@@ -84,7 +84,6 @@ def updatePrefs(conn, uid, prefs, isWarnings):
         curs.execute('''insert into prefs values(%s, %s, %s)''',
                     [uid, pref, isWarnings])
     curs.execute('unlock tables')
-    # return getPrefs(conn, uid)
 
 # --------------------------- Searching and Recommended Works
 
